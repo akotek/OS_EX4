@@ -1,0 +1,11 @@
+
+
+
+* Check return value for all SystemCalls used
+* Use of exceptions for the EX?
+
+Design:
+
+    - Input module (Parses given text 'whatsappServer 8875'
+    - Server module
+    - Client module
