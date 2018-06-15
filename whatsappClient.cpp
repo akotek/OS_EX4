@@ -5,9 +5,13 @@
 
 #define VALID_ARGC 4
 #define INVALID_ARGC_MSG "error: invalid number of arguments"
+#define INVALID_COMMAND_MSG "ERROR: Invalid input."
+#define USAGE_MSG "Usage: whatsappClient​ clientName serverAddress serverPort"
 #define INVALID_CLIENT_NAME "error: invalid client name"
+#define NAME_IN_USE "NAME_IN_USE"
+#define GROUP_ERROR "ERROR: failed to create group %s."
 
-
+#include "whatsappio.h"
 #include <iostream>
 #include <cstdio>
 #include <sys/socket.h>
@@ -16,7 +20,10 @@
 #include <cstring>
 #include <unistd.h>
 #include <string>
-#include <algorithm> // for std::all_of
+#include <vector>
+#include <sstream>
+#include <algorithm>
+#include <iterator>
 #include <cctype>    // for std::isalnum
 //
 using namespace std;
@@ -28,6 +35,16 @@ bool all_alphanumeric(const std::string& s)
                        [](char c) { return std::isalnum(c); });
 }
 
+void handleGroupValidation()
+{
+
+}
+
+
+
+
+
+
 int main(int argc, char* argv[])
 {
 
@@ -35,6 +52,7 @@ int main(int argc, char* argv[])
     if(argc != VALID_ARGC)
     {
         cerr << INVALID_ARGC_MSG << endl;
+        cout << USAGE_MSG << endl;
         return 1;
     }
     // validate input
@@ -88,17 +106,103 @@ int main(int argc, char* argv[])
         printf("\nConnection Failed \n");
         return -1;
     }
+    // TODO: name in use check
+
+
     printf("Connected Successfully.\n");
+
+
+
 
     while(true)
     {
-        string msg = "";
-        cin >> msg;
+        string command;
+        getline(cin, command); // get the command from the user
 
-        if (msg == "quit()")
+        // inputs to insert to the parse function
+        command_type commandT;
+        std::string name;
+        std::string message;
+        std::vector<std::string> clients;
+
+        parse_command(command, commandT, name, message, clients);
+
+
+
+
+        switch (commandT)
         {
-            break;
+            case CREATE_GROUP:
+                // check if group_name is alphanumeric &
+                // there is more then 1 client
+                if(!all_alphanumeric(name) || clients.size() < 2)
+                {
+                    printf(GROUP_ERROR, name);
+                    continue;
+                }
+
+                // check if current client in the group he wants to create
+                if (!(std::find(clients.begin(), clients.end(), clientName)
+                      != clients.end()))
+                {
+                    printf(GROUP_ERROR, name);
+                    continue;
+                }
+                std::vector<std::string> noDuplicatesClients;
+
+                // checks the client names are valid
+                for(string& client : clients)
+                {
+                    if(!all_alphanumeric(client))
+                    {
+                        printf(GROUP_ERROR, name);
+                        continue;
+                    }
+                    if (!(std::find(noDuplicatesClients.begin(), noDuplicatesClients.end(),
+                                  client) != noDuplicatesClients.end()))
+                    {
+                        noDuplicatesClients.pop_back(client);
+                    }
+                }
+                clients.swap(noDuplicatesClients);
+
+
+            case SEND:
+                continue;
+
+            case WHO:
+                continue;
+
+            case EXIT:
+                continue;
+
+            case INVALID:
+                continue;
+
+
+
+
         }
+
+
+
+        for(string& s: tokens){
+            std::cout << '"' << s << '"' << '\n';
+        }
+
+
+
+
+
+        string msg = "";
+        getline(cin, str);
+        // split input by spaces
+        istringstream iss(msg);
+        vector<string> tokens{istream_iterator<string>{iss},
+                              istream_iterator<string>{}};
+
+
+
         const char *cstr_msg = msg.c_str();
         send(socket_desc , cstr_msg , strlen(hello) , 0 );
         valread = read( socket_desc , buffer, 1024);
