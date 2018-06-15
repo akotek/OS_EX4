@@ -131,8 +131,9 @@ int main()
                 }
             }
         } // end if
-        //else its some IO operation on some other socket
-        //todo FIN THIS
+        // else its some IO operation on some other socket
+
+        //serverStdInput()
 
         // HandleClientRequest()
 
