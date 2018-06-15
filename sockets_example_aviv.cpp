@@ -20,7 +20,7 @@ int main()
     // After launching this program- use telnet localhost {PORT}
     // And write data to client (it will return back the data)
 
-    // Creates a socket
+    // Creates master socket
     // SOCK_STREAM means we use TCP
     int socket_desc = socket(AF_INET , SOCK_STREAM , 0);
     if (socket_desc == -1) {
@@ -58,6 +58,8 @@ int main()
 
     puts("Waiting for incoming connections...");
     int c = sizeof(struct sockaddr_in);
+    // A new socket will be created
+    // The one which is to be used by telnet (accept returns a socket)
     int client_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c);
 
     if (client_socket < 0){
