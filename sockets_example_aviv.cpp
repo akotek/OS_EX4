@@ -1,7 +1,7 @@
 #include <iostream>
-#include<cstdio>
+#include <cstdio>
+#include <sys/socket.h>
 #include <netinet/in.h>
-#include<sys/socket.h>
 #include<arpa/inet.h>
 #include <cstring>
 #include <unistd.h>
@@ -20,14 +20,16 @@ int main()
     // After launching this program- use telnet localhost {PORT}
     // And write data to client (it will return back the data)
 
-    // Creates master socket
-    // SOCK_STREAM means we use TCP
+    // Creates a socket
+    // SOCK_STREAM means we use TCP,
+    // AF_INET means we use IPv4
     int socket_desc = socket(AF_INET , SOCK_STREAM , 0);
     if (socket_desc == -1) {
         puts("error creating socket");
         return -1;
     }
     puts ("Socket created");
+    printf("socket desc: %d \n", socket_desc);
 
     // Init client
     struct sockaddr_in client;
@@ -39,7 +41,13 @@ int main()
 
     server.sin_family = AF_INET;    // set family to internet
     server.sin_port = htons(port);    // host to network short, port is 2bytes==short
-    server.sin_addr.s_addr = inet_addr(addr); // Converts ip addr to num for network
+    auto in_addr = inet_addr(addr);
+    if(in_addr == INADDR_NONE)
+    {
+        puts("error invalid address");
+        return -1;
+    }
+    server.sin_addr.s_addr = in_addr; // Converts ip addr to num for network
     memset(&(server.sin_zero), '\0', 8);    // put all nums to zero
 
     // Bind server:
@@ -58,9 +66,10 @@ int main()
 
     puts("Waiting for incoming connections...");
     int c = sizeof(struct sockaddr_in);
-    // A new socket will be created
-    // The one which is to be used by telnet (accept returns a socket)
+
     int client_socket = accept(socket_desc, (struct sockaddr *)&client, (socklen_t*)&c);
+
+    // TODO: select?
 
     if (client_socket < 0){
         puts("accepting a connection failed");
