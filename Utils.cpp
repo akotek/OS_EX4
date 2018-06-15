@@ -1,9 +1,9 @@
-/**
- * Helper class - used mostly for input validation
- */
+#include "Utils.h"
 
-class Utils{
+namespace Utils
+{
+    int validateInput(char *argv[]){
 
-
-
+        return 0;
+    }
 };
