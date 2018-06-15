@@ -5,11 +5,13 @@
 
 #define VALID_ARGC 4
 #define INVALID_ARGC_MSG "error: invalid number of arguments"
-#define INVALID_COMMAND_MSG "ERROR: Invalid input."
+#define INVALID_COMMAND_MSG "ERROR: Invalid input.\n"
 #define USAGE_MSG "Usage: whatsappClient​ clientName serverAddress serverPort"
 #define INVALID_CLIENT_NAME "error: invalid client name"
 #define NAME_IN_USE "NAME_IN_USE"
-#define GROUP_ERROR "ERROR: failed to create group %s."
+#define GROUP_ERROR "ERROR: failed to create group %s.\n"
+#define SEND_ERROR "ERROR: failed to send.\n"
+#define SEND_SUCCESS "Sent successfully. \n"
 
 #include "whatsappio.h"
 #include <iostream>
@@ -27,6 +29,9 @@
 #include <cctype>    // for std::isalnum
 //
 using namespace std;
+
+//vector<string> groups;
+
 
 bool all_alphanumeric(const std::string& s)
 {
@@ -125,13 +130,16 @@ int main(int argc, char* argv[])
         std::string message;
         std::vector<std::string> clients;
 
+        // splits user input to workable pieces
         parse_command(command, commandT, name, message, clients);
 
-
-
-
+        // handle user input by command type:
         switch (commandT)
         {
+            case INVALID:
+                printf(INVALID_COMMAND_MSG);
+                continue;
+
             case CREATE_GROUP:
                 // check if group_name is alphanumeric &
                 // there is more then 1 client
@@ -165,48 +173,33 @@ int main(int argc, char* argv[])
                     }
                 }
                 clients.swap(noDuplicatesClients);
+                // TODO: ^ should be handled in server side ^
+
+//                groups.pop_back(name); // add group to client group
 
 
             case SEND:
-                continue;
-
-            case WHO:
-                continue;
-
-            case EXIT:
-                continue;
-
-            case INVALID:
-                continue;
-
-
-
-
+                if (name == clientName)
+                {
+                    printf(SEND_ERROR);
+                    continue;
+                }
         }
 
-
-
-        for(string& s: tokens){
-            std::cout << '"' << s << '"' << '\n';
-        }
-
-
-
-
-
-        string msg = "";
-        getline(cin, str);
-        // split input by spaces
-        istringstream iss(msg);
-        vector<string> tokens{istream_iterator<string>{iss},
-                              istream_iterator<string>{}};
 
 
 
         const char *cstr_msg = msg.c_str();
-        send(socket_desc , cstr_msg , strlen(hello) , 0 );
+        send(socket_desc , cstr_msg , strlen(msg), 0);
         valread = read( socket_desc , buffer, 1024);
-        printf("%s\n",buffer );
+
+        // handle server response
+        printf("%s",buffer);
+        if(commandT == EXIT)
+        {
+            exit(0);
+        }
+
     }
     return 0;
 }

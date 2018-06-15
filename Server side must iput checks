@@ -1,0 +1,36 @@
+1. DUPLICATES:
+If client name appears more than one time in the received list,
+consider it as one instance. For example:
+calling “create_group osStaff Eshed,Eshed,Eytan” is the same as
+“create_group osStaff Eshed,Eytan”.
+
+this is may take on this:
+
+// inputs to insert to the parse function
+command_type commandT;
+std::string name;
+std::string message;
+std::vector<std::string> clients;
+
+// splits user input to workable pieces
+parse_command(command, commandT, name, message, clients);
+
+// TODO: should be handled in server side
+std::vector<std::string> noDuplicatesClients;
+// checks the client names are valid
+for(string& client : clients)
+{
+    if (!(std::find(noDuplicatesClients.begin(), noDuplicatesClients.end(),
+                  client) != noDuplicatesClients.end()))
+    {
+        noDuplicatesClients.pop_back(client);
+    }
+}
+clients.swap(noDuplicatesClients);
+// TODO: ^ should be handled in server side ^
+
+2. CHECK IF IN GROUP:
+Only a group member can send message to the group.
+    - Because what if the current user didn't start the group?
+
+3.
