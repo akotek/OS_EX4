@@ -9,12 +9,6 @@ using namespace std;
 
 #define MAX_CLIENTS 50
 
-void initSockets(int &socketList[]){
-    for (int i = 0; i < MAX_CLIENTS; i++)
-    {
-        socketList[i] = 0;
-    }
-}
 
 int main()
 {
@@ -23,13 +17,16 @@ int main()
     fd_set readfds; // Socket descriptors
     int clientSockets[MAX_CLIENTS];  // maxClient num is 50
     // Init all sockets to zero == means we read from terminal (STDIN)
-    initSockets(clientSockets);
+    for (int i = 0; i < MAX_CLIENTS; i++)
+    {
+        clientSockets[i] = 0;
+    }
 
 
     // Creates master socket
     // SOCK_STREAM means we use TCP
     masterSocket = socket(AF_INET , SOCK_STREAM , 0);
-    if (masterSocket == -1) {
+    if (masterSocket < 0) {
         puts("error creating socket");
         exit(-1);
     }
@@ -37,7 +34,7 @@ int main()
 
     // Init and bind Server
     struct sockaddr_in server;
-    uint16_t port = 8888;
+    int port = 8888;
     const char* addr = {"127.0.0.1"};   // localhost
     server.sin_family = AF_INET;    // set family to internet
     server.sin_port = htons(port);    // host to network short, port is 2bytes==short
