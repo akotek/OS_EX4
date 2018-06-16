@@ -59,15 +59,12 @@ int main(int argc, char* argv[])
     fd_set readfds;   // Copy of master- used by select()
     int fdMax;  // maxFD number
 
-    // Clear sockets:
+    // Clear sockets,
+    // Add master socket and STDIN to set:
     FD_ZERO(&clientfds);
     FD_ZERO(&readfds);
-
-    // Add master socket to set:
-    // Add STDIN fd
     FD_SET(serverSockfd, &clientfds);
     FD_SET(STDIN_FILENO, &clientfds);
-    socketsMap["server"] = serverSockfd;
 
     // Keep track of biggest file descriptor
     fdMax = serverSockfd;
@@ -134,8 +131,8 @@ int main(int argc, char* argv[])
                     } else { // Recieved data from client:
                         // Check if client is in readfds
                         // and recieve a msg from him
-                        dataFromClient[numOfBytesRead] = '\0';
-                        handleClientRequest(*dataFromClient);
+                        string request(dataFromClient); // convert char to str
+                        handleClientRequest(request);
 
                     }
                 } // END handle data from client
@@ -146,10 +143,9 @@ int main(int argc, char* argv[])
     return 0;
 }
 
-void handleClientRequest(const char &data){
+void handleClientRequest(const string &request){
     // Parse client request and do some logic:
     // Switch CASE
-    // untill we see '\0'\
 
     // use send()...... to send data
 
