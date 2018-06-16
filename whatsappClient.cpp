@@ -56,9 +56,9 @@ int main(int argc, char* argv[])
     // Start input validation && assignment TODO: put in helper function
     if(argc != VALID_ARGC)
     {
-        cerr << INVALID_ARGC_MSG << endl;
-        cout << USAGE_MSG << endl;
-        return 1;
+//        cerr << INVALID_ARGC_MSG << endl;
+        print_client_usage();
+        return -1;
     }
     // validate input
     const char* clientName = argv[1];
@@ -80,7 +80,6 @@ int main(int argc, char* argv[])
     struct sockaddr_in address;
     int socket_desc = 0, valread;
     struct sockaddr_in serv_addr;
-    char *hello = "Hello from client";
     char buffer[1024] = {0};
     if ((socket_desc = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
@@ -108,13 +107,13 @@ int main(int argc, char* argv[])
 
     if (connect(socket_desc, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
     {
-        printf("\nConnection Failed \n");
+        print_fail_connection();
         return -1;
     }
     // TODO: name in use check
 
 
-    printf("Connected Successfully.\n");
+    print_connection();
 
 
 
@@ -145,7 +144,7 @@ int main(int argc, char* argv[])
                 // there is more then 1 client
                 if(!all_alphanumeric(name) || clients.size() < 2)
                 {
-                    printf(GROUP_ERROR, name);
+                    print_create_group(false, false, clientName, name);
                     continue;
                 }
 
@@ -153,35 +152,36 @@ int main(int argc, char* argv[])
                 if (!(std::find(clients.begin(), clients.end(), clientName)
                       != clients.end()))
                 {
-                    printf(GROUP_ERROR, name);
+                    print_create_group(false, false, clientName, name);
                     continue;
                 }
-                std::vector<std::string> noDuplicatesClients;
+                vector<string> noDuplicatesClients;
 
                 // checks the client names are valid
                 for(string& client : clients)
                 {
                     if(!all_alphanumeric(client))
                     {
-                        printf(GROUP_ERROR, name);
+                        print_create_group(false, false, clientName, name);
                         continue;
                     }
                     if (!(std::find(noDuplicatesClients.begin(), noDuplicatesClients.end(),
                                   client) != noDuplicatesClients.end()))
                     {
-                        noDuplicatesClients.pop_back(client);
+                        noDuplicatesClients.push_back(client);
                     }
                 }
-                clients.swap(noDuplicatesClients);
-                // TODO: ^ should be handled in server side ^
 
-//                groups.pop_back(name); // add group to client group
-
+                if(noDuplicatesClients.size() < 2)
+                {
+                    print_create_group(false, false, clientName, name);
+                    continue;
+                }
 
             case SEND:
                 if (name == clientName)
                 {
-                    printf(SEND_ERROR);
+                    print_send(false, false, clientName, name, command);
                     continue;
                 }
         }
@@ -189,9 +189,9 @@ int main(int argc, char* argv[])
 
 
 
-        const char *cstr_msg = msg.c_str();
-        send(socket_desc , cstr_msg , strlen(msg), 0);
-        valread = read( socket_desc , buffer, 1024);
+        const char *cstr_msg = command.c_str();
+        send(socket_desc , cstr_msg , strlen(cstr_msg), 0);
+        valread = read(socket_desc , buffer, 1024);
 
         // handle server response
         printf("%s",buffer);
