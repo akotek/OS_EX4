@@ -65,15 +65,10 @@ int main(int argc, char* argv[])
     int port = atoi(argv[2]);
     establishServer(port);
 
-    // Socket descriptors
-    // WE need a different set for select
+
     fd_set clientfds;   // Master fd of all sockets
     fd_set readfds;   // Copy of master- used by select()
-
-    // Clear sockets,
-    // Add master socket and STDIN to set:
     FD_ZERO(&clientfds);
-    FD_ZERO(&readfds);
     FD_SET(serverSockfd, &clientfds);
     FD_SET(STDIN_FILENO, &clientfds);
 
@@ -85,9 +80,8 @@ int main(int argc, char* argv[])
         // Copy fds to selectSet
         readfds = clientfds;
 
-        // We wait for any activity from Select() sysCall
-        int activityFromSelect = select(fdMax+1, &readfds, NULL, NULL, NULL);
-        if (activityFromSelect < 0) {
+        // We wait for any activity from select()
+        if(select(fdMax+1, &readfds, NULL, NULL, NULL) < 0){
             printSysCallError("select", errno);
             exit(-1);
         }
@@ -95,7 +89,7 @@ int main(int argc, char* argv[])
         // Listen to masterSocket
         // If something happend on master socket,
         // Then we have a new connection from select():
-        if (FD_ISSET(serverSockfd, &readfds)) // Returns nonzero if in our set
+        if (FD_ISSET(serverSockfd, &readfds))
         {
             // There is a new connection:
             int newSockfd = accept(serverSockfd, (struct sockaddr *)
@@ -155,8 +149,10 @@ int main(int argc, char* argv[])
 
 void removeClient(int &fd, fd_set &clientfds)
 {
+    printf("Removes client with fd %d ", fd);
     close(fd);
     FD_CLR(fd, &clientfds);
+    //TODO removeFromGroup(fdToClientMap[fd]);
     clientToFdMap.erase(fdToClientMap[fd]);
     fdToClientMap.erase(fd);
 }
