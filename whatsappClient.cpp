@@ -7,14 +7,9 @@
 #define INVALID_ARGC_MSG "error: invalid number of arguments"
 #define INVALID_CLIENT_NAME "error: invalid client name"
 #define INVALID_COMMAND_MSG "ERROR: Invalid input.\n"
-#define USAGE_MSG "Usage: whatsappClient​ clientName serverAddress serverPort"
-#define INVALID_CLIENT_NAME "error: invalid client name"
-#define NAME_IN_USE "NAME_IN_USE"
-#define GROUP_ERROR "ERROR: failed to create group %s.\n"
-#define SEND_ERROR "ERROR: failed to send.\n"
-#define SEND_SUCCESS "Sent successfully. \n"
 #define EMPTY_STRING ""
 
+#include <netdb.h>
 
 #include "whatsappio.h"
 #include <iostream>
@@ -25,7 +20,7 @@
 #include <cstring>
 #include <unistd.h>
 #include <string>
-#include <algorithm> // for std::all_of
+#include <algorithm>
 #include <cctype>    // for std::isalnum
 //
 using namespace std;
@@ -75,13 +70,31 @@ int main(int argc, char* argv[])
 
 
     struct sockaddr_in address;
+    struct hostnet* hp;
     int socket_desc = 0, valread;
     struct sockaddr_in serv_addr;
+//
+//    if((hp = gethostbyname(server_ip)) == NULL)
+//    {
+//        print_fail_connection();
+//        exit(1);
+//    }
+//    memset(&address, 0, sizeof(address));
+//    memcpy((char*)&address.sin_addr, hp->h_addr, hp->h_length);
+//    address.sin_family = hp->h_addrtype;
+//    address.sin_port= hp->htons((u_short)server_port);
+//
+//
+
     if ((socket_desc = socket(AF_INET, SOCK_STREAM, 0)) < 0)
     {
         printf("\n Socket creation error \n");
         return -1;
     }
+
+
+
+
 
     memset(&serv_addr, '0', sizeof(serv_addr));
 
