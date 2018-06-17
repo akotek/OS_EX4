@@ -46,7 +46,7 @@ void shutdown();
 // Connects new client
 bool handleNewConnection(const int &sockfd);
 // Handles client request
-void handleClientRequest(char &data);
+void handleClientRequest();
 // Handles stdInput
 void handleStdInput();
 // Prints system call Errr's with errNum
@@ -118,31 +118,11 @@ int main(int argc, char* argv[])
                 if (FD_ISSET(fd, &readfds)){
                     // Handle data from client,
                     // Check if disconnected/valid:
-                    int bytesRead = (int)read(fd, &buf, MAX_BUFFER_SIZE -
-                            1);;
-                    if (((bytesRead)) <= 0){
-                        // Error or connection closed by client:
-                        if (bytesRead == 0){
-                            // no bytes read connection closed
-                            printf("Select: socket %d closed connection\n", fd);
-                        } else {
-                            printSysCallError("read", errno);
-                            exit(-1);
-                        }
-                        // Close and remove socket from all DS:
-                        removeClient(fd);
-
-                    } else { // Recieved data from client:
-                        // Check if client is in readfds
-                        // and recieve a msg from him
-                        buf[bytesRead] = '\0';
-                        string request(buf); // convert char to str
-                        //handleClientRequest(request);
+                    handleClientRequest();
                     }
                 }
             }
         }
-    }
     return 0;
 }
 
@@ -212,8 +192,8 @@ void removeClient(const int &fd)
     fdToClientMap.erase(fd);
 }
 
-void handleClientRequest(const string &request){
-    cout << "in handleClientRequest" << request << endl;
+void handleClientRequest(){
+    cout << "in handleClientRequest" << endl;
     // Parse client request and do some logic:
     // Switch CASE
 
