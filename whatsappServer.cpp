@@ -57,7 +57,8 @@ void removeClient(const int &fd);
 // Sets new connection
 int setNewConnection();
 // Handles a create_group request
-void handleCreateGroupRequest(const int &fd, const string &request);
+void handleCreateGroupRequest(const int &fd, const string &groupName,
+                              const vector<string> &clientsVec);
 // Checks sys call return val
 void checkSysCall(const int& sysCallVal, const string &sysCall);
 
@@ -79,9 +80,9 @@ int main(int argc, char* argv[])
 
     fd_set readfds;   // Copy of master- used by select()
     FD_ZERO(&clientfds);
+    FD_ZERO(&readfds);
     FD_SET(serverSockfd, &clientfds);
     FD_SET(STDIN_FILENO, &clientfds);
-
     // Keep track of biggest file descriptor //TODO change this to numOfFds++?
     fdMax = serverSockfd;
     while (true){
@@ -116,7 +117,9 @@ int main(int argc, char* argv[])
         }
         // We now check if there is any data from active sockets:
         else {
-            handleClientRequest(readfds);
+            //TODO
+           // handleClientRequest(readfds);
+            cout << "handle request" << endl;
         }
     } // END WHILE
     return 0;
@@ -237,6 +240,7 @@ void handleCreateGroupRequest(const int &fd, const string &groupName,
         print_create_group(true, false, clientName, groupName);
     }
 
+    //TODO
     // Check that we have those clients in active_list:
     //const bool isInActive = ...getCurrentActiveClientsLex();
 
@@ -248,7 +252,7 @@ void handleCreateGroupRequest(const int &fd, const string &groupName,
 }
 
 vector<string> getCurrentActiveClientsLex(){
-    return nullptr;
+    //TODO
 }
 void removeClient(const int &fd)
 {
