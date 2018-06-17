@@ -48,7 +48,7 @@ bool handleNewConnection(const int &sockfd);
 // Handles client request
 void handleClientRequest();
 // Handles stdInput
-void handleStdInput();
+bool handleStdInput();
 // Prints system call Errr's with errNum
 void printSysCallError(const string &sysCall, const int errNum);
 
@@ -98,9 +98,7 @@ int main(int argc, char* argv[])
             // There is a new connection:
             int newSockfd = setNewConnection();
             if(handleNewConnection(newSockfd)){
-                cout << fdToClientMap[newSockfd] << CONNECTED_SUCCESSFULLY;
-            } else {
-                exit(1);
+                cout << fdToClientMap[newSockfd] << USER_CONNECTED << flush;
             }
             if (newSockfd > fdMax)
             {
@@ -109,19 +107,19 @@ int main(int argc, char* argv[])
         }
         // Data is coming from stdin (server side):
         if (FD_ISSET(STDIN_FILENO, &readfds)) {
-            handleStdInput();
+            if(!handleStdInput()){
+                exit(0);
+            }
         }
         // Got a msg from exiting connection
         else {
             char buf[MAX_BUFFER_SIZE] = {0};
-            for(int fd = serverSockfd+1; fd < fdMax; fd++){
-                if (FD_ISSET(fd, &readfds)){
+                if (FD_ISSET(serverSockfd, &readfds)){
                     // Handle data from client,
                     // Check if disconnected/valid:
-                    handleClientRequest();
+                    handleClientRequest(readfds);
                     }
                 }
-            }
         }
     return 0;
 }
@@ -138,19 +136,20 @@ bool handleNewConnection(const int& sockfd){
     cout << "in HandleNewConnection " << endl;
 
     char buf[MAX_BUFFER_SIZE] = {0};
-    int bytesRead = (int) read(sockfd, &buf, MAX_BUFFER_SIZE - 1);
+    auto bytesRead = (int) read(sockfd, &buf, MAX_BUFFER_SIZE - 1);
     checkSysCall(bytesRead, "read");
 
     buf[bytesRead] = '\0';
     string clientName(buf);
     if (fdToClientMap.size() == MAX_CLIENTS){
-        int writeCall =  (int) write(sockfd, FAILED_TO_CONNECT_SERVER, strlen
+        auto writeCall =  (int) write(sockfd, FAILED_TO_CONNECT_SERVER, strlen
                 (FAILED_TO_CONNECT_SERVER));
         checkSysCall(writeCall, "write");
         return false;
     }
-    if (!clientToFdMap.count(clientName) || !groupsMap.count(clientName)){
-        int writeCall = (int) write(sockfd, CLIENT_NAME_EXISTS, strlen
+    if (clientToFdMap.count(clientName) || groupsMap.count(clientName)){
+        // Client exists
+        auto writeCall = (int) write(sockfd, CLIENT_NAME_EXISTS, strlen
                 (CLIENT_NAME_EXISTS));
         checkSysCall(writeCall, "write");
         return false;
@@ -160,24 +159,27 @@ bool handleNewConnection(const int& sockfd){
     FD_SET(sockfd, &clientfds);
     fdToClientMap[sockfd] = clientName;
     clientToFdMap[clientName] = sockfd;
-    int writeCall = (int) write(sockfd, CONNECTED_SUCCESSFULLY, strlen
+    auto writeCall = (int) write(sockfd, CONNECTED_SUCCESSFULLY, strlen
             (CONNECTED_SUCCESSFULLY));
     checkSysCall(writeCall, "write");
     return true;
 }
-void handleStdInput(){
+bool handleStdInput(){
     cout << "in handleStdInput()" << endl;
 
     char buf[MAX_BUFFER_SIZE] = {0};
-    int bytesRead = (int)read(STDIN_FILENO, &buf, MAX_BUFFER_SIZE - 1);
+    auto bytesRead = (int)read(STDIN_FILENO, &buf, MAX_BUFFER_SIZE - 1);
     checkSysCall(bytesRead, "read");
+
     buf[bytesRead] = '\0';
     if (!string(buf).compare(EXIT_CMD))
     {
         shutdown();
         print_exit();
-        exit(0);
+        return false;
     }
+    //TODO another thing was pressed in server shell- what to do in this case:
+    return true;
 }
 
 void removeClient(const int &fd)
@@ -192,7 +194,7 @@ void removeClient(const int &fd)
     fdToClientMap.erase(fd);
 }
 
-void handleClientRequest(){
+void handleClientRequest(fd_set &readfds){
     cout << "in handleClientRequest" << endl;
     // Parse client request and do some logic:
     // Switch CASE
