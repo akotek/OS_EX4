@@ -1,0 +1,62 @@
+eliavmor, arielz
+Eliav Mor (305285678), Ariel Zevin (204176101)
+EX: 5
+
+FILES:
+README -- this file
+MakeFile -- MakeFile for this project
+whatsappServer.cpp -- implementation of a Whatsapp Server.
+whatsappClient.cpp -- implementation of a Whatsapp Client
+
+REMARKS:
+
+ANSWERS:
+
+Question 1
+
+a. Client - There are two altercations that we'll have to make in order to
+support the "leave_group" command:
+-checkInput method - we'll have to add an option of the specified command and
+validate that it is indeed in the correct format.
+
+b. Server - There are two altercations that we'll have to make in order to
+support the "leave_group" command:
+-We'll have to add another case in the handleRequest method, which addresses
+this command. This case will call a newly added function - responseLeaveGroup.
+-Add a new function - responseLeaveGroup. The function will validate
+the existence of the group name and will remove the specified client from the
+group.
+
+Question 2
+We prefer TCP over UDP in this exercise because it is a connection oriented
+protocol, as apposed to UDP. In this exercise it's pivotal for us that no
+data will be lost in the transfer process, and even more so - that order of
+the communication between the server and the client will be as logic suggests
+(a send command will follow up with a response from the server for example).
+TCP indeed assures us high reliability in that aspect, and there is absolute
+guarantee that the data transferred remains intact and arrives in the same order
+in which it was sent. In addition, TCP also performes error checking and error
+recovery. Erroneous packets are retransmitted from the source to the
+destination - which is excellent for our needs.
+
+Question 3
+Two examples for applications that use UDP:
+-Live Streaming
+-Skype
+UDP is preferred for both applications for the same reason: in both cases
+time is of high importance. Information such as image and sound (for
+instance in skype) is pivotal for the current moment, but if a delay is
+caused by say, checking errors, then the application looses from it's speed
+and purpose for that matter.
+
+Question 4
+One of our main problems in our current design is that all of our user data
+is placed in un-backed data structures. Thus, in order to solve this problem
+we suggest the following solution:
+We'll maintain a log file (which is a solution that is manageable with our
+current knowledge, but in a wider observation obviously a DB of some sorts is
+preferable). Every operation the server performs (whether it's a read/write)
+will be documented in the log file in an agreed upon format. In case of a
+crash all the data will be easily recovered by parsing the log file, but
+obviously if the server crashed while data was transmitted to/from it - that
+specific data will be lost.
