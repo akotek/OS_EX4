@@ -9,6 +9,11 @@ void print_connection() {
     printf("Connected Successfully.\n");
 }
 
+void print_connection_server(const std::string& client) {
+    printf("%s connected.\n", client.c_str());
+}
+
+
 void print_dup_connection() {
     printf("Client name is already in use.\n");
 }
@@ -98,14 +103,14 @@ void print_invalid_input() {
     printf("ERROR: Invalid input.\n");
 }
 
-void print_error(const std::string& function_name, int errno) {
-    printf("ERROR: %s %d.\n", function_name.c_str(), errno);
+void print_error(const std::string& function_name, int error_number) {
+    printf("ERROR: %s %d.\n", function_name.c_str(), error_number);
 }
 
 void parse_command(const std::string& command, command_type& commandT, 
                    std::string& name, std::string& message, 
                    std::vector<std::string>& clients) {
-    char c[MAX_INPUT];
+    char c[WA_MAX_INPUT];
     const char *s; 
     char *saveptr;
     name.clear();

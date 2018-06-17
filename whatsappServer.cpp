@@ -9,19 +9,22 @@
 #include <unistd.h>
 using namespace std;
 
-//TODO: 1. address of this server--> is it localhost?
+//TODO: 1. address of this server--> GetHostByNamePart() sys call?? lclhost??
 //TODO: 2. Check in all exit() if sockets are CLOSED-SHOULD THEY??
+//TODO: 3. delete all prints
+//TODO: 4. what is MAX_buffer_size?
+//TODO: 5. verify Error Handling (USAGE is missing)
 
 // --------- Constants ---------
 static const int MAX_CLIENTS = 50;
 static const int MAX_PENDING_CONNECTIONS = 10;
 static const int MAX_BUFFER_SIZE = 256;
+static const int MIN_GROUP_NUM = 2;
 static const std::regex portRegex("^([0-9]{1,"
 "4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$");
 static const string EXIT_CMD = "EXIT\n";
 static const char* CLIENT_NAME_EXISTS = "Client name is already in use.\n";
 static const char* FAILED_TO_CONNECT_SERVER = "Failed to connect the server";
-static const char* USER_CONNECTED = " connected.";
 static const char* CONNECTED_SUCCESSFULLY = "Connected Successfully.\n";
 // -----------------------------
 
@@ -29,7 +32,7 @@ static const char* CONNECTED_SUCCESSFULLY = "Connected Successfully.\n";
 // --------- Data Structures ---------
 std::map<string, int> clientToFdMap;
 std::map<int, string> fdToClientMap;
-std::map<string, std::set<string>> groupsMap;
+std::map<string, std::vector<string>> groupsMap;
 fd_set clientfds;   // Master fd of all sockets
 struct sockaddr_in server; // Server to be binded later
 const char* addr = {"127.0.0.1"};   // localhost
@@ -49,13 +52,13 @@ bool handleNewConnection(const int &sockfd);
 void handleClientRequest();
 // Handles stdInput
 bool handleStdInput();
-// Prints system call Errr's with errNum
-void printSysCallError(const string &sysCall, const int errNum);
-
+// Removes client
 void removeClient(const int &fd);
-
+// Sets new connection
 int setNewConnection();
-
+// Handles a create_group request
+void handleCreateGroupRequest(const int &fd, const string &request);
+// Checks sys call return val
 void checkSysCall(const int& sysCallVal, const string &sysCall);
 
 // ------------------------------------
@@ -79,7 +82,7 @@ int main(int argc, char* argv[])
     FD_SET(serverSockfd, &clientfds);
     FD_SET(STDIN_FILENO, &clientfds);
 
-    // Keep track of biggest file descriptor
+    // Keep track of biggest file descriptor //TODO change this to numOfFds++?
     fdMax = serverSockfd;
     while (true){
 
@@ -98,7 +101,7 @@ int main(int argc, char* argv[])
             // There is a new connection:
             int newSockfd = setNewConnection();
             if(handleNewConnection(newSockfd)){
-                cout << fdToClientMap[newSockfd] << USER_CONNECTED << flush;
+                print_connection_server(fdToClientMap[newSockfd]);
             }
             if (newSockfd > fdMax)
             {
@@ -111,24 +114,18 @@ int main(int argc, char* argv[])
                 exit(0);
             }
         }
-        // Got a msg from exiting connection
+        // We now check if there is any data from active sockets:
         else {
-            char buf[MAX_BUFFER_SIZE] = {0};
-                if (FD_ISSET(serverSockfd, &readfds)){
-                    // Handle data from client,
-                    // Check if disconnected/valid:
-                    handleClientRequest(readfds);
-                    }
-                }
+            handleClientRequest(readfds);
         }
+    } // END WHILE
     return 0;
 }
 
 int setNewConnection()
 {
     int serverLen = sizeof(server);
-    int newSockfd = accept(serverSockfd, (struct sockaddr *) &server,
-                           (socklen_t *) &serverLen);
+    int newSockfd = accept(serverSockfd, (struct sockaddr *) &server, (socklen_t *) &serverLen);
     checkSysCall(newSockfd, "accept");
     return newSockfd;
 }
@@ -149,6 +146,7 @@ bool handleNewConnection(const int& sockfd){
     }
     if (clientToFdMap.count(clientName) || groupsMap.count(clientName)){
         // Client exists
+        print_dup_connection();
         auto writeCall = (int) write(sockfd, CLIENT_NAME_EXISTS, strlen
                 (CLIENT_NAME_EXISTS));
         checkSysCall(writeCall, "write");
@@ -164,6 +162,7 @@ bool handleNewConnection(const int& sockfd){
     checkSysCall(writeCall, "write");
     return true;
 }
+
 bool handleStdInput(){
     cout << "in handleStdInput()" << endl;
 
@@ -182,6 +181,75 @@ bool handleStdInput(){
     return true;
 }
 
+void handleClientRequest(fd_set &readfds){
+    cout << "in handleClientRequest" << endl;
+
+    // We run on all active sockets
+    // And check if anyone has got something for us:
+    for (int fd = serverSockfd; fd < fdMax; fd++){
+        char buf[MAX_BUFFER_SIZE] = {0};
+        if (FD_ISSET(fd, &readfds)){
+            auto bytesRead = (int)read(STDIN_FILENO, &buf, MAX_BUFFER_SIZE - 1);
+            checkSysCall(bytesRead, "read");
+
+            if (bytesRead == 0){
+             // TODO User disconnected -- -- - - complete?
+            }
+            buf[bytesRead] = '\0';
+            // Parse given command:
+            string request(buf);
+            command_type commandT;
+            string name;
+            string message;
+            vector<string> clients;
+            parse_command(request, commandT, name, message, clients);
+
+            if (commandT == CREATE_GROUP){
+                handleCreateGroupRequest(fd, name, clients);
+                break;
+            }
+            else if (commandT == SEND){
+               // handleSendRequest(...);
+                break;
+            }
+            else if (commandT == WHO){
+            //    handleWhoRequest();
+                break;
+            }
+            else if (commandT == EXIT){
+             //   handleExitRequest(fd);
+                break;
+            }
+
+        }
+    } // END for-loop
+}
+
+void handleCreateGroupRequest(const int &fd, const string &groupName,
+                              const vector<string> &clientsVec)
+{
+    // Converts vector to set so no duplicates
+    std::set<string> clientsSet(clientsVec.begin(), clientsVec.end());
+
+    string clientName = fdToClientMap[fd];
+    const bool isClientInGroup = clientsSet.find(clientName) != clientsSet.end();
+    if (clientsVec.size() < MIN_GROUP_NUM || !isClientInGroup){
+        print_create_group(true, false, clientName, groupName);
+    }
+
+    // Check that we have those clients in active_list:
+    //const bool isInActive = ...getCurrentActiveClientsLex();
+
+    // create group:
+    groupsMap[clientName] = clientsVec;
+
+    // msg client
+    char msgToClient;
+}
+
+vector<string> getCurrentActiveClientsLex(){
+    return nullptr;
+}
 void removeClient(const int &fd)
 {
     cout << "in removeClient()" << endl;
@@ -194,18 +262,9 @@ void removeClient(const int &fd)
     fdToClientMap.erase(fd);
 }
 
-void handleClientRequest(fd_set &readfds){
-    cout << "in handleClientRequest" << endl;
-    // Parse client request and do some logic:
-    // Switch CASE
-
-    // use send()...... to send data
-
-}
-
 void shutdown(){
     cout << "Shutting down: closing " << fdMax << " sockets" << endl;
-    for(int i =3; i< fdMax; i++){
+    for(int i = serverSockfd; i< fdMax; i++){
         close(i);
     }
 }
@@ -249,13 +308,9 @@ void establishServer(const int &port){
     printf("Waiting for incoming connections...\n");
 }
 
-void printSysCallError(const string &sysCall, const int errNum){
-    cerr << "ERROR: " << sysCall << " " <<  errNum << endl;
-}
-
 void checkSysCall(const int& sysCallVal, const string &sysCall){
     if (sysCallVal < 0){
-        printSysCallError(sysCall, errno);
+        print_error(sysCall, errno);
         exit(1);
     }
 }
