@@ -255,7 +255,7 @@ void handleExitRequest(const int clientFd)
     auto writeCall = (int) write(clientFd, UNREGISTERED_SUCCESSFULLY_MSG,
                                  strlen(UNREGISTERED_SUCCESSFULLY_MSG));
     checkSysCall(writeCall, "write");
-
+    close(clientFd);
     FD_CLR(clientFd, &clientfds);
     string clientName = fdToClientMap[clientFd];
 

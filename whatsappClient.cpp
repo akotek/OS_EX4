@@ -1,16 +1,7 @@
 //
 // Created by yoavabadi on 6/15/18.
 //
-
-
-#define VALID_ARGC 4
-#define INVALID_ARGC_MSG "error: invalid number of arguments"
-#define INVALID_CLIENT_NAME "error: invalid client name"
-#define INVALID_COMMAND_MSG "ERROR: Invalid input.\n"
-#define EMPTY_STRING ""
-
 #include <netdb.h>
-
 #include "whatsappio.h"
 #include <iostream>
 #include <cstdio>
@@ -22,8 +13,29 @@
 #include <string>
 #include <algorithm>
 #include <cctype>    // for std::isalnum
-//
+#include <regex>
+
 using namespace std;
+
+// --------- Constants ---------
+#define VALID_ARGC 4
+#define EMPTY_STRING ""
+static const int MAX_BUFFER_SIZE = 256;
+
+static const std::regex portRegex("^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$");
+static const std::regex ipRegex("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\."
+                                        "[0-9]{1,3}$");
+
+// --------- Globals ---------
+const char* clientName;
+const char* server_ip;
+int server_port;
+
+struct sockaddr_in server_sockaddr;
+struct hostent *hp;
+int clientFd, valread;
+fd_set readFds;
+//struct sockaddr_in serv_addr;
 
 
 bool all_alphanumeric(const std::string& s)
@@ -32,6 +44,8 @@ bool all_alphanumeric(const std::string& s)
                        [](char c) { return isalnum(c); });
 }
 
+// --------- Client API: ---------
+
 //void handleGroupValidation()
 //{
 //
@@ -39,82 +53,86 @@ bool all_alphanumeric(const std::string& s)
 //
 
 
+void validateArguments(int argc, char* argv[]);
+
+// ------------------------------------
 
 
+void validateArguments(int argc, char* argv[])
+{
+    // Input validation
+    if (argc != VALID_ARGC || !all_alphanumeric(argv[1]) ||
+        !regex_match(argv[2], ipRegex) ||  !regex_match(argv[3], portRegex))
+    {
+        print_client_usage();
+        exit(1);
+    }
 
-int main(int argc, char* argv[])
+    // Input assignment
+    clientName = argv[1];
+    server_ip = argv[2];
+    server_port = atoi(argv[3]);
+}
+
+void establishConnection()
 {
 
-    // Start input validation && assignment TODO: put in helper function
-    if(argc != VALID_ARGC)
-    {
-        cerr << INVALID_ARGC_MSG << endl;
-        return 1;
-
-    }
-    // validate input
-    const string clientName = argv[1];
-    const char* server_ip = argv[2];
-    int server_port = atoi(argv[3]);
-
-
-    // client name must be alphanumeric (letters & digits only)
-    if (!all_alphanumeric(clientName))
-    {
-        cerr << INVALID_CLIENT_NAME << endl;
-        return 1;
-    }
-
-    // End of input validation && assignment
-
-
-
-    struct sockaddr_in address;
-    struct hostnet* hp;
-    int socket_desc = 0, valread;
-    struct sockaddr_in serv_addr;
-//
-//    if((hp = gethostbyname(server_ip)) == NULL)
-//    {
-//        print_fail_connection();
-//        exit(1);
-//    }
-//    memset(&address, 0, sizeof(address));
-//    memcpy((char*)&address.sin_addr, hp->h_addr, hp->h_length);
-//    address.sin_family = hp->h_addrtype;
-//    address.sin_port= hp->htons((u_short)server_port);
-//
-//
-
-    if ((socket_desc = socket(AF_INET, SOCK_STREAM, 0)) < 0)
+    memset(&server_sockaddr, 0, sizeof(server_sockaddr));
+    memcpy((char *)&server_sockaddr.sin_addr, hp->h_addr,
+           (unsigned int)hp->h_length);
+    server_sockaddr.sin_family = hp->h_addrtype;
+    server_sockaddr.sin_port = htons((u_short)server_port);
+    // build the socket
+    if ((clientFd = socket(hp->h_addrtype, SOCK_STREAM, 0)) < 0)
     {
         printf("\n Socket creation error \n");
-        return -1;
+        exit(1);
     }
-
-
-
-
-
-    memset(&serv_addr, '0', sizeof(serv_addr));
-
-    serv_addr.sin_family = AF_INET;
-    serv_addr.sin_port = htons(server_port);
-
-    // Convert IPv4 and IPv6 addresses from text to binary form
-    if(inet_pton(AF_INET, server_ip, &serv_addr.sin_addr)<=0)
+    // Connect to server
+    if (connect(clientFd, (struct sockaddr *)&server_sockaddr,
+                sizeof(server_sockaddr)) < 0)
     {
-        printf("\nInvalid address/ Address not supported \n");
-        return -1;
-    }
-
-    if (connect(socket_desc, (struct sockaddr *)&serv_addr, sizeof(serv_addr)) < 0)
-    {
+        close(clientFd);
         print_fail_connection();
-        return -1;
+        exit(1);
+    }
+    // Register clientName to server
+    if (write(clientFd, clientName, strlen(clientName)) < 0)
+    {
+        print_fail_connection(); // TODO: check what should be the error message
+        exit(1);
     }
 
+//    // Read response from server
+//    char buf[MAX_BUFFER_SIZE] = {0};
+//    auto bytesRead = (int) read(clientFd, &buf, MAX_BUFFER_SIZE - 1);
+//    buf[bytesRead] = '\0';
+//    string serverResponse(buf);
+//    // TODO -------------------------- :
+//    cout << serverResponse << endl;
+}
 
+
+
+/**
+ *
+ * @param argc
+ * @param argv
+ * @return
+ */
+int main(int argc, char* argv[])
+{
+    fd_set clientFds; // stdin and socket
+
+    // Input validation && assignment
+    validateArguments(argc, argv);
+
+    // create a connection to the server
+    establishConnection();
+
+    FD_ZERO(&readFds);
+    FD_SET(STDIN_FILENO, &readFds);
+    FD_SET(clientFd, &readFds);
 
     print_connection();
 
@@ -144,7 +162,7 @@ int main(int argc, char* argv[])
         {
             case INVALID:
             {
-                printf(INVALID_COMMAND_MSG);
+                print_invalid_input();
                 continue;
             }
 
@@ -218,8 +236,8 @@ int main(int argc, char* argv[])
 
         char buffer[1024] = {0};
         const char *cstr_msg = command.c_str();
-        send(socket_desc , cstr_msg , strlen(cstr_msg), 0);
-        valread = read(socket_desc , buffer, 1024);
+        send(clientFd , cstr_msg , strlen(cstr_msg), 0);
+        valread = read(clientFd , buffer, 1024);
         // handle server response
         // if server exit before client
         string str(buffer);
