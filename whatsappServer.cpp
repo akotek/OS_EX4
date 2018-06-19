@@ -7,6 +7,7 @@
 #include <regex>
 #include <arpa/inet.h>
 #include <unistd.h>
+#include <termio.h>
 using namespace std;
 
 //TODO: 1. address of this server--> GetHostByNamePart() sys call?? lclhost??
@@ -16,16 +17,18 @@ using namespace std;
 //TODO: 5. verify Error Handling (USAGE is missing)
 
 // --------- Constants ---------
-#define MAX_CLIENTS = 50;
-#define MAX_PENDING_CONNECTIONS = 10;
-#define MAX_BUFFER_SIZE = 256;
-#define MIN_GROUP_NUM = 2;
+static const int MAX_CLIENTS =  50;
+static const int MAX_PENDING_CONNECTIONS = 10;
+static const int MAX_BUFFER_SIZE = 256;
+static const int MIN_GROUP_NUM = 2;
 static const std::regex portRegex("^([0-9]{1,"
-"4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$");
-#define EXIT_CMD = "EXIT\n";
-#define CLIENT_NAME_EXISTS = "Client name is already in use.\n";
-#define FAILED_TO_CONNECT_SERVER = "Failed to connect the server";
-#define CONNECTED_SUCCESSFULLY = "Connected Successfully.\n";
+                                          "4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$");
+static const string EXIT_CMD = "EXIT\n";
+static const char* CLIENT_NAME_EXISTS = "Client name is already in use.\n";
+static const char* FAILED_TO_CONNECT_SERVER  = "Failed to connect the server";
+static const char* CONNECTED_SUCCESSFULLY = "Connected Successfully.\n";
+static const char* UNREGISTERED_SUCCESSFULLY_MSG =
+                                            "Unregistered successfully.\n";
 #define SEND_ERROR_MSG "ERROR: failed to send "
 #define CREATE_GROUP_ERROR_MSG "ERROR: failed to create group "
 #define SEND_SUCCESS_MSG "was sent successfully to "
@@ -55,7 +58,7 @@ void shutdown();
 // Connects new client
 bool handleNewConnection(const int &sockfd);
 // Handles client request
-void handleClientRequest();
+void handleClientRequest(fd_set &readfds);
 // Handles stdInput
 bool handleStdInput();
 // Removes client
@@ -70,6 +73,10 @@ void checkSysCall(const int& sysCallVal, const string &sysCall);
 // Handles a send request
 void handleSendRequest(const string & clientName, const string &name,
                        const string &message);
+
+void handleWhoRequest(const int clientFd);
+void handleExitRequest(const int clientFd);
+
 // ------------------------------------
 
 int main(int argc, char* argv[])
@@ -89,8 +96,8 @@ int main(int argc, char* argv[])
     fd_set readfds;   // Copy of master- used by select()
     FD_ZERO(&clientfds);
     FD_ZERO(&readfds);
-    FD_SET(serverSockfd, &clientfds);
     FD_SET(STDIN_FILENO, &clientfds);
+    FD_SET(serverSockfd, &clientfds);
     // Keep track of biggest file descriptor //TODO change this to numOfFds++?
     fdMax = serverSockfd;
     while (true){
@@ -123,11 +130,10 @@ int main(int argc, char* argv[])
                 exit(0);
             }
         }
-        // We now check if there is any data from active sockets:
+            // We now check if there is any data from active sockets:
         else {
-            //TODO
-            handleClientRequest(readfds);
             cout << "handle request" << endl;
+            handleClientRequest(readfds);
         }
     } // END WHILE
     return 0;
@@ -140,6 +146,8 @@ int setNewConnection()
     checkSysCall(newSockfd, "accept");
     return newSockfd;
 }
+
+
 bool handleNewConnection(const int& sockfd){
     cout << "in HandleNewConnection " << endl;
 
@@ -168,11 +176,13 @@ bool handleNewConnection(const int& sockfd){
     FD_SET(sockfd, &clientfds);
     fdToClientMap[sockfd] = clientName;
     clientToFdMap[clientName] = sockfd;
+
     auto writeCall = (int) write(sockfd, CONNECTED_SUCCESSFULLY, strlen
             (CONNECTED_SUCCESSFULLY));
     checkSysCall(writeCall, "write");
     return true;
 }
+
 
 bool handleStdInput(){
     cout << "in handleStdInput()" << endl;
@@ -195,18 +205,20 @@ bool handleStdInput(){
 void handleClientRequest(fd_set &readfds){
     // We run on all active sockets
     // And check if anyone has got something for us:
-    for (int fd = serverSockfd; fd < fdMax; fd++){
-        char buf[MAX_BUFFER_SIZE] = {0};
+    for (auto& mapPair : fdToClientMap){
+        int fd = mapPair.first;
+        char buffer[MAX_BUFFER_SIZE];
         if (FD_ISSET(fd, &readfds)){
-            auto bytesRead = (int)read(STDIN_FILENO, &buf, MAX_BUFFER_SIZE - 1);
+            auto bytesRead = (int)read(fd, &buffer, MAX_BUFFER_SIZE -1);
             checkSysCall(bytesRead, "read");
+            tcflush(fd, TCIOFLUSH); // TODO: need to flush?
 
             if (bytesRead == 0){
-             // TODO User disconnected -- -- - - complete?
+                // TODO User disconnected -- -- - - complete?
             }
-            buf[bytesRead] = '\0';
+            buffer[bytesRead] = '\0';
             // Parse given command:
-            string request(buf);
+            string request(buffer);
             command_type commandT;
             string name;
             string message;
@@ -216,7 +228,6 @@ void handleClientRequest(fd_set &readfds){
             //TODO: AVIV check me - changed it also in create_group
             string clientName = fdToClientMap[fd];
             // TODO: Validate clientName
-
             if (commandT == CREATE_GROUP){
                 handleCreateGroupRequest(clientName, name, clients);
                 break;
@@ -225,18 +236,49 @@ void handleClientRequest(fd_set &readfds){
                 handleSendRequest(clientName, name, message);
                 break;
             }
-            else if (commandT == WHO){
-            //    handleWhoRequest();
+            else if (commandT == WHO)
+            { // TODO parser only works with space
+                handleWhoRequest(fd);
                 break;
             }
-            else if (commandT == EXIT){
-             //   handleExitRequest(fd);
+            else if (commandT == EXIT)
+            {
+                handleExitRequest(fd);
                 break;
             }
-
         }
-    } // END for-loop
+    }
 }
+
+void handleExitRequest(const int clientFd)
+{
+    auto writeCall = (int) write(clientFd, UNREGISTERED_SUCCESSFULLY_MSG,
+                                 strlen(UNREGISTERED_SUCCESSFULLY_MSG));
+    checkSysCall(writeCall, "write");
+
+    FD_CLR(clientFd, &clientfds);
+    string clientName = fdToClientMap[clientFd];
+
+    clientToFdMap.erase(clientName);
+    fdToClientMap.erase(clientFd);
+
+    // Remove client from groups.
+    for(auto group : groupsMap)
+    {
+        vector<string>::iterator deleteIter;
+        for(auto member = group.second.begin();
+            member != group.second.end(); member++)
+        {
+            if((*member) == clientName)
+            {
+                deleteIter = member;
+                group.second.erase(deleteIter);
+            }
+        }
+    }
+    print_exit(true, clientName);
+}
+
 
 // TODO: check with aviv if stdout is the right output - or print to socket
 // stream?
@@ -272,7 +314,7 @@ bool validateGroupMembers(vector<string> groupMembers, string groupName,
 
     return true;
 }
-
+//
 void handleCreateGroupRequest(const string &clientName, const string &groupName,
                               const vector<string> &clientsVec)
 {
@@ -308,8 +350,19 @@ void handleCreateGroupRequest(const string &clientName, const string &groupName,
     groupsMap[clientName] = clientsVec;
     print_create_group(true, true, clientName, groupName);
 
+    //    <sender_client_name>
+    //    : Group
+    //    “<group_name>“ was
+    //    created successfully.\n
+
     // msg client
-    char msgToClient; // TODO: to where to stream?
+    string serverMessage = clientName + ": Group \"" + groupName
+                           + "\" was created successfully.\n";
+    auto sysCall = (int)write(clientToFdMap[clientName],
+                              serverMessage.c_str(),
+                              strlen(serverMessage.c_str()));
+    checkSysCall(sysCall, "write");
+    return;
 }
 
 
@@ -328,7 +381,7 @@ void handleGroupMessage(const string &clientName, const string &groupName,
         {
             auto sysCall = (int)write(clientToFdMap[groupMember],
                                       serverMessage.c_str(),
-                                strlen(serverMessage.c_str()));
+                                      strlen(serverMessage.c_str()));
             checkSysCall(sysCall, "write");
         }
     }
@@ -347,7 +400,7 @@ void sendSuccessMessages(const string &clientName, const string &name,
 
     // send error to client
     string successMessage = clientName + ": \"" + message + "\" " +
-            string(SEND_SUCCESS_MSG) +" to " + name + ".\n";
+                            string(SEND_SUCCESS_MSG) +" to " + name + ".\n";
 
     auto sysCall = (int)write(clientToFdMap[clientName],
                               successMessage.c_str(),
@@ -378,25 +431,65 @@ void handleSendRequest(const string &clientName, const string &name,
         sendSuccessMessages(clientName, name, message);
 
     }
-    // Handle send to another client request
+        // Handle send to another client request
     else if (!( clientToFdMap.find(name) == clientToFdMap.end()))
     {
         handlePeerToPeerMessage(clientName, name, serverMessage);
         sendSuccessMessages(clientName, name, message);
     }
-    // If name not a client or a group name - error
+        // If name not a client or a group name - error
     else
     {
         print_send(true, false, clientName, name, message);
         // send error to client
         string errorMessage = string(SEND_ERROR_MSG) +
-                "\"" + message + "\" to " + name + ".\n";
+                              "\"" + message + "\" to " + name + ".\n";
 
         auto sysCall = (int)write(clientToFdMap[clientName],
                                   errorMessage.c_str(),
                                   strlen(errorMessage.c_str()));
         checkSysCall(sysCall, "write");
     }
+}
+
+
+void handleWhoRequest(const int clientFd)
+{
+    cout << "in handle who request" << endl;
+
+    string whoMessage;
+    static const auto addToString =
+            [&whoMessage](const string& client)
+            { whoMessage += client + ",";};
+
+    // Converts vector to set so it will be ordered
+    std::set<string> clientsSet;
+
+    for (auto &client : fdToClientMap)
+    {
+        if(client.first != clientFd)
+        {
+            clientsSet.insert(client.second);
+        }
+    }
+
+    if(clientsSet.empty())
+    {
+        // TODO handle empty client list
+    }
+    // set to string
+    std::for_each(clientsSet.begin(), clientsSet.end(), addToString);
+    // remove last ","
+    whoMessage = whoMessage.substr(0, whoMessage.size() - 1) + ".\n";
+
+    cout << whoMessage << endl;
+
+    // Send response and server message
+    print_who_server(fdToClientMap[clientFd]);
+    auto sysCall = (int)write(clientFd,
+                              whoMessage.c_str(),
+                              strlen(whoMessage.c_str()));
+    checkSysCall(sysCall, "write");
 }
 
 
