@@ -15,6 +15,7 @@
 #include <cctype>    // for std::isalnum
 #include <regex>
 
+
 using namespace std;
 
 // --------- Constants ---------
@@ -77,9 +78,14 @@ void validateArguments(int argc, char* argv[])
 void establishConnection()
 {
 
+    if ((hp = gethostbyname(server_ip)) == NULL) // get host port
+    {
+//        cerr << FAILED_CONNECT_MESSAGE << endl << flush;
+        exit(1);
+    }
+
     memset(&server_sockaddr, 0, sizeof(server_sockaddr));
-    memcpy((char *)&server_sockaddr.sin_addr, hp->h_addr,
-           (unsigned int)hp->h_length);
+    memcpy((char *)&server_sockaddr.sin_addr, hp->h_addr, hp->h_length);
     server_sockaddr.sin_family = hp->h_addrtype;
     server_sockaddr.sin_port = htons((u_short)server_port);
     // build the socket
@@ -195,7 +201,7 @@ int main(int argc, char* argv[])
                     continue;
                 }
                 vector<string> noDuplicatesClients;
-                noDuplicatesClients.push_back(clientName);
+                noDuplicatesClients.push_back(string(clientName));
 
                 // checks the client names are valid
                 for(string& client : clients)
