@@ -14,7 +14,7 @@
 #include <algorithm>
 #include <cctype>    // for std::isalnum
 #include <regex>
-
+#include <termios.h>
 
 using namespace std;
 
@@ -28,6 +28,8 @@ static const int MAX_BUFFER_SIZE = 256;
 static const std::regex portRegex("^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$");
 static const std::regex ipRegex("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\."
                                         "[0-9]{1,3}$");
+string CLOSE_SOCKET_MSG = "close";
+
 
 // --------- Globals ---------
 const char* clientName;
@@ -289,13 +291,21 @@ int main(int argc, char* argv[])
             // TODO -------------------------- :
             // Read response from server
             char buf[MAX_BUFFER_SIZE] = {0};
-            auto bytesRead = (int) read(clientFd, &buf, MAX_BUFFER_SIZE - 1);
+            auto bytesRead = (int)read(clientFd, &buf, MAX_BUFFER_SIZE - 1);
             if(bytesRead < 0)
             {
-                break;
+                //TODO error handling
+                exit(1);
             }
             buf[bytesRead] = '\0';
             string serverResponse(buf);
+            if(serverResponse == CLOSE_SOCKET_MSG) // TODO - reachable??
+            {
+                print_exit(false, clientName); // TODO: what msg?
+                exit(1);
+            }
+
+            tcflush(clientFd, TCIOFLUSH);
             cout << serverResponse << endl;
         }
 

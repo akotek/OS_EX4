@@ -32,7 +32,7 @@ static const char* UNREGISTERED_SUCCESSFULLY_MSG =
 #define SEND_ERROR_MSG "ERROR: failed to send "
 #define CREATE_GROUP_ERROR_MSG "ERROR: failed to create group "
 #define SEND_SUCCESS_MSG "was sent successfully to "
-
+static const char *const CLOSE_SOCKET_MSG = "close";
 
 //
 // -----------------------------
@@ -194,8 +194,9 @@ bool handleStdInput(){
     checkSysCall(bytesRead, "read");
 
     buf[bytesRead] = '\0';
-    if (!string(buf).compare(EXIT_CMD))
+    if (string(buf) == EXIT_CMD)
     {
+        cout << "in exit command" << endl;
         shutdown();
         print_exit();
         return false;
@@ -511,9 +512,13 @@ void removeClient(const int &fd)
 
 void shutdown(){
     cout << "Shutting down: closing " << fdMax << " sockets" << endl;
-    for(int i = serverSockfd; i< fdMax; i++){
-        close(i);
+
+    for(const auto client : fdToClientMap)
+    {
+        auto sendCheck = (int)write(client.first, CLOSE_SOCKET_MSG, strlen
+                (CLOSE_SOCKET_MSG));
     }
+//    close(serverSockfd);
 }
 
 int createSocket(){
