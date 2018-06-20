@@ -21,6 +21,8 @@ using namespace std;
 // --------- Constants ---------
 #define VALID_ARGC 4
 #define EMPTY_STRING ""
+#define SOCKETS_NUM 4
+#define EXIT_STR "exit"
 static const int MAX_BUFFER_SIZE = 256;
 
 static const std::regex portRegex("^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$");
@@ -75,12 +77,14 @@ void validateArguments(int argc, char* argv[])
     server_port = atoi(argv[3]);
 }
 
+
+// TODO: change and cleanup
 void establishConnection()
 {
 
-    if ((hp = gethostbyname(server_ip)) == NULL) // get host port
+    if ((hp = gethostbyname(server_ip)) == NULL)
     {
-//        cerr << FAILED_CONNECT_MESSAGE << endl << flush;
+//        cerr << FAILED_CONNECT_MESSAGE << endl << flush; //TODO: error msg
         exit(1);
     }
 
@@ -109,15 +113,109 @@ void establishConnection()
         exit(1);
     }
 
-//    // Read response from server
-//    char buf[MAX_BUFFER_SIZE] = {0};
-//    auto bytesRead = (int) read(clientFd, &buf, MAX_BUFFER_SIZE - 1);
-//    buf[bytesRead] = '\0';
-//    string serverResponse(buf);
-//    // TODO -------------------------- :
-//    cout << serverResponse << endl;
+    // TODO -------------------------- :
+    // Read response from server
+    char buf[MAX_BUFFER_SIZE] = {0};
+    auto bytesRead = (int) read(clientFd, &buf, MAX_BUFFER_SIZE - 1);
+    buf[bytesRead] = '\0';
+    string serverResponse(buf);
+    cout << serverResponse << endl;
 }
 
+
+bool validateInput(const string &command)
+{
+
+
+    // inputs to insert to the parse function
+    command_type commandT;
+    string name;
+    string message;
+    vector<string> clients;
+
+    // splits user input to workable pieces
+    parse_command(command, commandT, name, message, clients);
+
+    // handle user input by command type:
+    switch (commandT)
+    {
+        case INVALID:
+        {
+            print_invalid_input();
+            return false;
+        }
+
+
+        case SEND:
+        {
+            if (name == clientName)
+            {
+                print_send(false, false, clientName, name, command);
+                return false;
+            }
+            break;
+        }
+
+        case CREATE_GROUP:
+        {
+            // check if group_name is alphanumeric &
+            // there is more then 1 client
+            if(!all_alphanumeric(name) || clients.size() < 2)
+            {
+                print_create_group(false, false, clientName, name);
+                return false;
+            }
+
+            // check if current client in the group he wants to create
+            if (!(std::find(clients.begin(), clients.end(), clientName)
+                  != clients.end()))
+            {
+                print_create_group(false, false, clientName, name);
+                return false;
+            }
+            vector<string> noDuplicatesClients;
+            noDuplicatesClients.push_back(string(clientName));
+
+            // checks the client names are valid
+            for(string& client : clients)
+            {
+                if(!all_alphanumeric(client))
+                {
+                    print_create_group(false, false, clientName, name);
+                    return false;
+                }
+                if (!(std::find(noDuplicatesClients.begin(), noDuplicatesClients.end(),
+                                client) != noDuplicatesClients.end()))
+                {
+                    noDuplicatesClients.push_back(client);
+                }
+            }
+
+            if(noDuplicatesClients.size() < 2)
+            {
+                print_create_group(false, false, clientName, name);
+                return false;
+            }
+            break;
+        }
+
+        case WHO:
+        {
+            break;
+        }
+
+        case EXIT:
+        {
+            // TODO : check valid input?
+
+            break;
+        }
+//
+//            default:
+//                break;
+    }
+    return true;
+}
 
 
 /**
@@ -128,134 +226,82 @@ void establishConnection()
  */
 int main(int argc, char* argv[])
 {
-    fd_set clientFds; // stdin and socket
-
+    fd_set clientListenFds; // std in and server socket
     // Input validation && assignment
     validateArguments(argc, argv);
-
     // create a connection to the server
     establishConnection();
-
     FD_ZERO(&readFds);
+//    FD_ZERO(&clientListenFds);
     FD_SET(STDIN_FILENO, &readFds);
     FD_SET(clientFd, &readFds);
 
-    print_connection();
+//    print_connection();
 
     while(true)
     {
+        char readBuffer[MAX_BUFFER_SIZE] = {0};
         string command;
-        getline(cin, command); // get the command from the user
+        clientListenFds = readFds;
+        auto listen = (int)select(SOCKETS_NUM , &clientListenFds, NULL, NULL, NULL);
 
-        // parse_command errors out with empty string
-        if(command == EMPTY_STRING)
+        if(listen < 0)
         {
-            print_invalid_input();
-            continue;
+            //error
+            exit(1);
         }
 
-        // inputs to insert to the parse function
-        command_type commandT;
-        string name;
-        string message;
-        vector<string> clients;
-
-        // splits user input to workable pieces
-        parse_command(command, commandT, name, message, clients);
-
-        // handle user input by command type:
-        switch (commandT)
+        // got command from client
+        if (FD_ISSET(STDIN_FILENO, &clientListenFds))
         {
-            case INVALID:
+            cout << "in stdin handle" << endl;
+            auto inRead = (int)read(STDERR_FILENO, readBuffer,
+                                                     MAX_BUFFER_SIZE -1);
+            // parse_command errors out with empty string
+            if(inRead < 0 || string(readBuffer) == EMPTY_STRING)
             {
                 print_invalid_input();
                 continue;
             }
+            command = string(readBuffer);
+            command = command.substr(0, command.size()-1); // removes newline
 
-
-            case SEND:
+            if(!validateInput(command))
             {
-                if (name == clientName)
-                {
-                    print_send(false, false, clientName, name, command);
-                    continue;
-                }
-                break;
+                continue;
+            }
+            cout << command << endl;
+
+            write(clientFd, command.c_str(), strlen(command.c_str()) + 1);
+
+            if(command == EXIT_STR)
+            {
+                print_exit(false, clientName);
+                exit(0);
             }
 
-            case CREATE_GROUP:
-            {
-                // check if group_name is alphanumeric &
-                // there is more then 1 client
-                if(!all_alphanumeric(name) || clients.size() < 2)
-                {
-                    print_create_group(false, false, clientName, name);
-                    continue;
-                }
-
-                // check if current client in the group he wants to create
-                if (!(std::find(clients.begin(), clients.end(), clientName)
-                      != clients.end()))
-                {
-                    print_create_group(false, false, clientName, name);
-                    continue;
-                }
-                vector<string> noDuplicatesClients;
-                noDuplicatesClients.push_back(string(clientName));
-
-                // checks the client names are valid
-                for(string& client : clients)
-                {
-                    if(!all_alphanumeric(client))
-                    {
-                        print_create_group(false, false, clientName, name);
-                        continue;
-                    }
-                    if (!(std::find(noDuplicatesClients.begin(), noDuplicatesClients.end(),
-                                    client) != noDuplicatesClients.end()))
-                    {
-                        noDuplicatesClients.push_back(client);
-                    }
-                }
-
-                if(noDuplicatesClients.size() < 2)
-                {
-                    print_create_group(false, false, clientName, name);
-                    continue;
-                }
-                break;
-            }
-
-            case WHO:
-            {
-                break;
-            }
-
-            case EXIT:
-            {
-                break;
-            }
-//
-//            default:
-//                break;
         }
-
-        char buffer[1024] = {0};
-        const char *cstr_msg = command.c_str();
-        send(clientFd , cstr_msg , strlen(cstr_msg), 0);
-        valread = read(clientFd , buffer, 1024);
-        // handle server response
-        // if server exit before client
-        string str(buffer);
-        if(str == EMPTY_STRING)
+        // got message from server
+        else if (FD_ISSET(clientFd, &clientListenFds))
         {
-            exit(1); // TODO: error msg?
+            cout << "in server socket handle" << endl;
+
+            // TODO -------------------------- :
+            // Read response from server
+            char buf[MAX_BUFFER_SIZE] = {0};
+            auto bytesRead = (int) read(clientFd, &buf, MAX_BUFFER_SIZE - 1);
+            if(bytesRead < 0)
+            {
+                break;
+            }
+            buf[bytesRead] = '\0';
+            string serverResponse(buf);
+            cout << serverResponse << endl;
         }
-        printf("%s",buffer);
-        if(commandT == EXIT)
-        {
-            exit(0);
-        }
+
+
+
+
 
     }
     return 0;

@@ -77,7 +77,8 @@ void handleSendRequest(const string & clientName, const string &name,
 
 void handleWhoRequest(const int clientFd);
 void handleExitRequest(const int clientFd);
-
+void handlePeerToPeerMessage(const string &clientName, const string &peerName,
+                             const string &serverMessage);
 // ------------------------------------
 
 int main(int argc, char* argv[])
@@ -400,6 +401,7 @@ void sendSuccessMessages(const string &clientName, const string &name,
     //        <name>.\n
 
     // send error to client
+
     string successMessage = clientName + ": \"" + message + "\" " +
                             string(SEND_SUCCESS_MSG) +" to " + name + ".\n";
 
@@ -432,7 +434,7 @@ void handleSendRequest(const string &clientName, const string &name,
         sendSuccessMessages(clientName, name, message);
 
     }
-        // Handle send to another client request
+    // Handle send to another client request
     else if (!( clientToFdMap.find(name) == clientToFdMap.end()))
     {
         handlePeerToPeerMessage(clientName, name, serverMessage);
