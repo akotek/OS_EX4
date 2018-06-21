@@ -297,7 +297,7 @@ bool validateGroupMembers(vector<string> groupMembers, string groupName,
     if (!( groupsMap.find(groupName) == groupsMap.end()) ||
             !( clientToFdMap.find(groupName) == clientToFdMap.end()))
     {
-        print_create_group(true, false, clientName, groupName);
+//        print_create_group(true, false, clientName, groupName);
         return false;
     }
 
@@ -306,7 +306,7 @@ bool validateGroupMembers(vector<string> groupMembers, string groupName,
     if (!(find(groupMembers.begin(), groupMembers.end(), clientName)
           != groupMembers.end()))
     {
-        print_create_group(true, false, clientName, groupName);
+//        print_create_group(true, false, clientName, groupName);
         return false;
     }
     // check that all group members are connected to the server
@@ -316,7 +316,7 @@ bool validateGroupMembers(vector<string> groupMembers, string groupName,
         // TODO: check with aviv what is the minimal fd id
         if(clientToFdMap[(*member)] < 2 || clientToFdMap[(*member)] > fdMax)
         {
-            print_create_group(true, false, clientName, groupName);
+//            print_create_group(true, false, clientName, groupName);
             return false;
         }
     }
@@ -342,10 +342,10 @@ void handleCreateGroupRequest(const string &clientName, const string &groupName,
         string errorMessage = string(CREATE_GROUP_ERROR_MSG) +
                               "\"" + groupName + "\".\n";
 
-//        auto sysCall = (int)write(clientToFdMap[clientName],
-//                                  errorMessage.c_str(),
-//                                  strlen(errorMessage.c_str()));
-//        checkSysCall(sysCall, "write");
+        auto sysCall = (int)write(clientToFdMap[clientName],
+                                  errorMessage.c_str(),
+                                  strlen(errorMessage.c_str()));
+        checkSysCall(sysCall, "write");
         return;
     }
 

@@ -310,12 +310,7 @@ int main(int argc, char* argv[])
             }
             buf[bytesRead] = '\0';
             string serverResponse(buf);
-            cout << "server response size: " << serverResponse.size() << endl;
-//            if(serverResponse == CLOSE_SOCKET_MSG) // TODO - reachable??
-//            {
-//                print_exit(false, clientName); // TODO: what msg?
-//                exit(1);
-//            }
+
 
 
             tcflush(clientFd, TCIOFLUSH);
