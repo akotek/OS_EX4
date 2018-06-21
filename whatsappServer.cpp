@@ -67,7 +67,7 @@ void handleClientRequest(fd_set &readfds);
 // Handles stdInput
 bool handleStdInput();
 // Removes client
-void removeClient(const int &fd);
+//void removeClient(const int &fd);
 // Sets new connection
 int setNewConnection();
 // Handles a create_group request
@@ -98,7 +98,7 @@ bool not_command(const std::string& s)
 
 int main(int argc, char* argv[])
 {
-    cout << "Starting server on port: " << argv[1] << endl;
+//    cout << "Starting server on port: " << argv[1] << endl;
     // Input validation
     if (argc != 2 || !regex_match(argv[1], portRegex)){
         print_invalid_input();
@@ -189,7 +189,7 @@ bool handleNewConnection(const int& sockfd){
         return false;
     }
 
-    cout << "Adding new client..." << endl;
+//    cout << "Adding new client..." << endl;
     FD_SET(sockfd, &clientfds);
     fdToClientMap[sockfd] = clientName;
     clientToFdMap[clientName] = sockfd;
@@ -210,7 +210,7 @@ bool handleStdInput(){
     buf[bytesRead] = '\0';
     if (string(buf) == EXIT_CMD)
     {
-        cout << "in exit command" << endl;
+//        cout << "in exit command" << endl;
         shutdown();
         print_exit();
         close(serverSockfd);
@@ -274,11 +274,6 @@ void handleExitRequest(const int clientFd)
 
     clientToFdMap.erase(clientName);
     fdToClientMap.erase(clientFd);
-
-    if(!( clientToFdMap.find(clientName) == clientToFdMap.end()))
-    {
-        cout << "UNSIGN FAIL" << endl;
-    }
 
     // Remove client from groups.
     for(auto group : groupsMap)
@@ -518,20 +513,20 @@ void handleWhoRequest(const int clientFd)
 
 
 
-void removeClient(const int &fd)
-{
-    cout << "in removeClient()" << endl;
-    printf("Removes client with fd %d ", fd);
-    close(fd);
-
-    FD_CLR(fd, &clientfds);
-    //TODO removeFromGroup(fdToClientMap[fd]);
-    clientToFdMap.erase(fdToClientMap[fd]);
-    fdToClientMap.erase(fd);
-}
+//void removeClient(const int &fd)
+//{
+////    cout << "in removeClient()" << endl;
+//    printf("Removes client with fd %d ", fd);
+//    close(fd);
+//
+//    FD_CLR(fd, &clientfds);
+//    //TODO removeFromGroup(fdToClientMap[fd]);
+//    clientToFdMap.erase(fdToClientMap[fd]);
+//    fdToClientMap.erase(fd);
+//}
 
 void shutdown(){
-    cout << "Shutting down: closing " << fdMax << " sockets" << endl;
+//    cout << "Shutting down: closing " << fdMax << " sockets" << endl;
 
     for(const auto client : fdToClientMap)
     {

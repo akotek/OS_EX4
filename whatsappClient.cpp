@@ -44,11 +44,11 @@ int clientFd, valread;
 fd_set readFds;
 //struct sockaddr_in serv_addr;
 
-//void checkSysCall(const int& sysCallVal, const string &sysCall){
-//    if (sysCallVal < 0){
-//        print_error(sysCall, errno);
-//        exit(1);
-//    }
+void checkSysCall(const int& sysCallVal, const string &sysCall){
+    if (sysCallVal < 0){
+        print_error(sysCall, errno);
+        exit(1);
+    }
 
 //bool not_command(const std::string& s)
 //{
@@ -104,7 +104,7 @@ void establishConnection()
 
     if ((hp = gethostbyname(server_ip)) == NULL)
     {
-//        cerr << FAILED_CONNECT_MESSAGE << endl << flush; //TODO: error msg
+//        cerr << FAILED_CONNECT << endl << flush; //TODO: error msg
         exit(1);
     }
 
