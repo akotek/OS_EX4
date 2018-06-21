@@ -166,9 +166,11 @@ bool validateInput(const string &command)
     // splits user input to workable pieces
     parse_command(command, commandT, name, message, clients);
 
+    // only ,,,, input
     if(clients.empty())
     {
-        cout<< "wwwww" << endl;
+        print_create_group(false, false, clientName, name);
+        return false;
     }
 
     // validate user input by command type:
