@@ -354,7 +354,7 @@ void handleCreateGroupRequest(const string &clientName, const string &groupName,
     // Check that we have those clients in active_list:
     const bool isInActive = validateGroupMembers(clientsVec,
                                                  groupName, clientName);
-    if (clientsVec.size() < MIN_GROUP_NUM || !isClientInGroup || !isInActive
+    if (clientsSet.size() < MIN_GROUP_NUM || !isClientInGroup || !isInActive
         ){ // || !not_command(clientName)
         print_create_group(true, false, clientName, groupName);
 
