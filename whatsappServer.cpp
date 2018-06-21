@@ -72,7 +72,7 @@ bool handleStdInput();
 int setNewConnection();
 // Handles a create_group request
 void handleCreateGroupRequest(const string &clientName, const string &groupName,
-                              const vector<string> &clientsVec);
+                              vector<string> &clientsVec);
 // Checks sys call return val
 void checkSysCall(const int& sysCallVal, const string &sysCall);
 // Handles a send request
@@ -101,7 +101,7 @@ int main(int argc, char* argv[])
 //    cout << "Starting server on port: " << argv[1] << endl;
     // Input validation
     if (argc != 2 || !regex_match(argv[1], portRegex)){
-        print_invalid_input();
+        print_server_usage();
         exit(-1);
     }
 
@@ -338,16 +338,16 @@ bool validateGroupMembers(vector<string> groupMembers, string groupName,
 }
 //
 void handleCreateGroupRequest(const string &clientName, const string &groupName,
-                              const vector<string> &clientsVec)
+                              vector<string> &clientsVec)
 {
+    clientsVec.push_back(clientName);
     // Converts vector to set so no duplicates
     std::set<string> clientsSet(clientsVec.begin(), clientsVec.end());
 
-    const bool isClientInGroup = clientsSet.find(clientName) != clientsSet.end();
     // Check that we have those clients in active_list:
     const bool isInActive = validateGroupMembers(clientsVec,
                                                  groupName, clientName);
-    if (clientsSet.size() < MIN_GROUP_NUM || !isClientInGroup || !isInActive
+    if (clientsSet.size() < MIN_GROUP_NUM || !isInActive
         ){ // || !not_command(clientName)
         print_create_group(true, false, clientName, groupName);
 
@@ -363,15 +363,10 @@ void handleCreateGroupRequest(const string &clientName, const string &groupName,
     }
 
 
-
     // create group:
     groupsMap[groupName] = clientsVec;
     print_create_group(true, true, clientName, groupName);
 
-    //    <sender_client_name>
-    //    : Group
-    //    “<group_name>“ was
-    //    created successfully.\n
 
     // msg client
     string serverMessage = clientName + ": Group \"" + groupName
@@ -387,10 +382,6 @@ void handleGroupMessage(const string &clientName, const string &groupName,
                         const string &serverMessage)
 {
 
-    // TODO: AVIV - must we use a buffer?
-//    char buffer[MAX_BUFFER_SIZE];
-//    string groupMessage = clientName + ": " + message;
-//    strncpy(buffer, groupMessage.c_str(), MAX_BUFFER_SIZE);
     vector <string> groupMembers = groupsMap[groupName];
     for (auto &groupMember : groupMembers)
     {
@@ -409,16 +400,7 @@ void sendSuccessMessages(const string &clientName, const string &name,
 {
     print_send(true, true, clientName, name, message);
 
-    //
-    //<sender_client_name>
-    //: “<message>” was
-    //        sent successfully to
-    //        <name>.\n
-
     // send error to client
-
-//    string successMessage = clientName + ": \"" + message + "\" " +
-//                            string(SEND_SUCCESS_MSG) +" to " + name + ".";
 
     string successMessage = "Sent successfully.";
     auto sysCall = (int)write(clientToFdMap[clientName],
@@ -511,19 +493,6 @@ void handleWhoRequest(const int clientFd)
     checkSysCall(sysCall, "write");
 }
 
-
-
-//void removeClient(const int &fd)
-//{
-////    cout << "in removeClient()" << endl;
-//    printf("Removes client with fd %d ", fd);
-//    close(fd);
-//
-//    FD_CLR(fd, &clientfds);
-//    //TODO removeFromGroup(fdToClientMap[fd]);
-//    clientToFdMap.erase(fdToClientMap[fd]);
-//    fdToClientMap.erase(fd);
-//}
 
 void shutdown(){
 //    cout << "Shutting down: closing " << fdMax << " sockets" << endl;

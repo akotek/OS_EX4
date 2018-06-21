@@ -149,8 +149,7 @@ void establishConnection()
         print_dup_connection();
         exit(1);
     }
-
-    cout << serverResponse;
+    print_connection();
 }
 
 
@@ -167,12 +166,6 @@ bool validateInput(const string &command)
     // splits user input to workable pieces
     parse_command(command, commandT, name, message, clients);
 
-    // example: a,, ,, input
-    if(clients.empty() || regex_match(command, commaRegex))
-    {
-        print_create_group(false, false, clientName, name);
-        return false;
-    }
 
     // validate user input by command type:
     switch (commandT)
@@ -203,6 +196,12 @@ bool validateInput(const string &command)
                 return false;
             }
 
+            // example: a,, ,, input
+            if(clients.empty() || regex_match(command, commaRegex))
+            {
+                print_create_group(false, false, clientName, name);
+                return false;
+            }
 
 //            // check if current client in the group he wants to create
 //            if (!(std::find(clients.begin(), clients.end(), clientName)
