@@ -15,6 +15,10 @@ using namespace std;
 //TODO: 3. delete all prints
 //TODO: 4. what is MAX_buffer_size?
 //TODO: 5. verify Error Handling (USAGE is missing)
+//
+//In case of a system call error in the server side, print “ERROR: <system call function name>
+//<errno>.\n” (for example: “ERROR: accept 22.\n”)
+
 
 // --------- Constants ---------
 static const int MAX_CLIENTS =  50;
@@ -289,15 +293,16 @@ void handleExitRequest(const int clientFd)
 bool validateGroupMembers(vector<string> groupMembers, string groupName,
                           string clientName){
 
-    // check if groupName already exists
-    if (!( groupsMap.find(groupName) == groupsMap.end()))
+    // check if groupName already exists as another group or user name
+    if (!( groupsMap.find(groupName) == groupsMap.end()) ||
+            !( clientToFdMap.find(groupName) == clientToFdMap.end()))
     {
         print_create_group(true, false, clientName, groupName);
         return false;
     }
 
     // check if current client in the group he wants to create
-    // - TODO: code duplication with send request
+    // TODO: code duplication with send request
     if (!(find(groupMembers.begin(), groupMembers.end(), clientName)
           != groupMembers.end()))
     {
