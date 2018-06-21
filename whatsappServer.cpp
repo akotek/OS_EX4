@@ -343,7 +343,6 @@ void handleCreateGroupRequest(const string &clientName, const string &groupName,
     // Converts vector to set so no duplicates
     std::set<string> clientsSet(clientsVec.begin(), clientsVec.end());
 
-    // TODO: YOAV: duplicate code with my validation (?)
     const bool isClientInGroup = clientsSet.find(clientName) != clientsSet.end();
     // Check that we have those clients in active_list:
     const bool isInActive = validateGroupMembers(clientsVec,
@@ -418,9 +417,10 @@ void sendSuccessMessages(const string &clientName, const string &name,
 
     // send error to client
 
-    string successMessage = clientName + ": \"" + message + "\" " +
-                            string(SEND_SUCCESS_MSG) +" to " + name + ".\n";
+//    string successMessage = clientName + ": \"" + message + "\" " +
+//                            string(SEND_SUCCESS_MSG) +" to " + name + ".";
 
+    string successMessage = "Sent successfully.";
     auto sysCall = (int)write(clientToFdMap[clientName],
                               successMessage.c_str(),
                               strlen(successMessage.c_str()));

@@ -149,7 +149,7 @@ void establishConnection()
         exit(1);
     }
 
-    cout << serverResponse << endl;
+    cout << serverResponse;
 }
 
 
@@ -195,13 +195,13 @@ bool validateInput(const string &command)
                 return false;
             }
 
-//            // check if current client in the group he wants to create
-//            if (!(std::find(clients.begin(), clients.end(), clientName)
-//                  != clients.end()))
-//            {
-//                print_create_group(false, false, clientName, name);
-//                return false;
-//            }
+            // check if current client in the group he wants to create
+            if (!(std::find(clients.begin(), clients.end(), clientName)
+                  != clients.end()))
+            {
+                print_create_group(false, false, clientName, name);
+                return false;
+            }
             vector<string> noDuplicatesClients;
             noDuplicatesClients.push_back(string(clientName));
 
@@ -220,11 +220,11 @@ bool validateInput(const string &command)
                 }
             }
 
-//            if(noDuplicatesClients.size() < 2)
-//            {
-//                print_create_group(false, false, clientName, name);
-//                return false;
-//            }
+            if(noDuplicatesClients.size() < 2)
+            {
+                print_create_group(false, false, clientName, name);
+                return false;
+            }
             break;
         }
 
