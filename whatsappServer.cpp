@@ -24,11 +24,11 @@ static const int MIN_GROUP_NUM = 2;
 static const std::regex portRegex("^([0-9]{1,"
                                           "4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$");
 static const string EXIT_CMD = "EXIT\n";
-static const char* CLIENT_NAME_EXISTS = "Client name is already in use.\n";
+static const char *const CLIENT_NAME_EXISTS = "duplicate";
 static const char* FAILED_TO_CONNECT_SERVER  = "Failed to connect the server";
 static const char* CONNECTED_SUCCESSFULLY = "Connected Successfully.\n";
 static const char* UNREGISTERED_SUCCESSFULLY_MSG =
-                                            "Unregistered successfully.\n";
+        "Unregistered successfully.\n";
 #define SEND_ERROR_MSG "ERROR: failed to send "
 #define CREATE_GROUP_ERROR_MSG "ERROR: failed to create group "
 #define SEND_SUCCESS_MSG "was sent successfully to "
@@ -167,7 +167,7 @@ bool handleNewConnection(const int& sockfd){
     }
     if (clientToFdMap.count(clientName) || groupsMap.count(clientName)){
         // Client exists
-        print_dup_connection();
+        print_dup_connection(); // TODO remove - for debugging
         auto writeCall = (int) write(sockfd, CLIENT_NAME_EXISTS, strlen
                 (CLIENT_NAME_EXISTS));
         checkSysCall(writeCall, "write");
@@ -199,6 +199,7 @@ bool handleStdInput(){
         cout << "in exit command" << endl;
         shutdown();
         print_exit();
+        close(serverSockfd);
         return false;
     }
     //TODO another thing was pressed in server shell- what to do in this case:
@@ -435,7 +436,7 @@ void handleSendRequest(const string &clientName, const string &name,
         sendSuccessMessages(clientName, name, message);
 
     }
-    // Handle send to another client request
+        // Handle send to another client request
     else if (!( clientToFdMap.find(name) == clientToFdMap.end()))
     {
         handlePeerToPeerMessage(clientName, name, serverMessage);

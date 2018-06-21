@@ -21,6 +21,7 @@ using namespace std;
 // --------- Constants ---------
 #define VALID_ARGC 4
 #define EMPTY_STRING ""
+#define MIN_STR 2
 #define SOCKETS_NUM 4
 #define EXIT_STR "exit"
 static const int MAX_BUFFER_SIZE = 256;
@@ -256,11 +257,12 @@ int main(int argc, char* argv[])
         // got command from client
         if (FD_ISSET(STDIN_FILENO, &clientListenFds))
         {
-            cout << "in stdin handle" << endl;
+//            cout << "in stdin handle" << endl;
             auto inRead = (int)read(STDERR_FILENO, readBuffer,
                                                      MAX_BUFFER_SIZE -1);
             // parse_command errors out with empty string
-            if(inRead < 0 || string(readBuffer) == EMPTY_STRING)
+            if(inRead < 0 || string(readBuffer) == EMPTY_STRING ||
+                    string(readBuffer).size() < MIN_STR)
             {
                 print_invalid_input();
                 continue;
@@ -286,7 +288,7 @@ int main(int argc, char* argv[])
         // got message from server
         else if (FD_ISSET(clientFd, &clientListenFds))
         {
-            cout << "in server socket handle" << endl;
+//            cout << "in server socket handle" << endl;
 
             // TODO -------------------------- :
             // Read response from server
