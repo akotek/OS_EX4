@@ -566,13 +566,13 @@ void establishServer(const int &port){
     // And init's server:
     serverSockfd = createSocket();
     initServer(port, addr, server);
-    printf("Socket created and server init succeeded \n");
+//    printf("Socket created and server init succeeded \n");
 
     bindSocket(serverSockfd, server);
-    printf("Binding succeded, listening on port %d \n", port);
+//    printf("Binding succeded, listening on port %d \n", port);
 
     listenSocket(serverSockfd);
-    printf("Waiting for incoming connections...\n");
+//    printf("Waiting for incoming connections...\n");
 }
 
 void checkSysCall(const int& sysCallVal, const string &sysCall){

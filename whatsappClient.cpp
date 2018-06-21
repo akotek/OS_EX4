@@ -115,7 +115,7 @@ void establishConnection()
     // build the socket
     if ((clientFd = socket(hp->h_addrtype, SOCK_STREAM, 0)) < 0)
     {
-        printf("\n Socket creation error \n");
+//        printf("\n Socket creation error \n"); // TODO: ERRROR msg
         exit(1);
     }
     // Connect to server
