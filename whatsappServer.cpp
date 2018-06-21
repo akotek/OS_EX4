@@ -149,7 +149,7 @@ int main(int argc, char* argv[])
         }
             // We now check if there is any data from active sockets:
         else {
-            cout << "handle request" << endl;
+//            cout << "handle request" << endl;
             handleClientRequest(readfds);
         }
     } // END WHILE
@@ -166,7 +166,7 @@ int setNewConnection()
 
 
 bool handleNewConnection(const int& sockfd){
-    cout << "in HandleNewConnection " << endl;
+//    cout << "in HandleNewConnection " << endl;
 
     char buf[MAX_BUFFER_SIZE] = {0};
     auto bytesRead = (int) read(sockfd, &buf, MAX_BUFFER_SIZE - 1);
@@ -202,7 +202,6 @@ bool handleNewConnection(const int& sockfd){
 
 
 bool handleStdInput(){
-    cout << "in handleStdInput()" << endl;
 
     char buf[MAX_BUFFER_SIZE] = {0};
     auto bytesRead = (int)read(STDIN_FILENO, &buf, MAX_BUFFER_SIZE - 1);

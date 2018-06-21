@@ -25,6 +25,7 @@ using namespace std;
 #define MIN_STR 2
 #define SOCKETS_NUM 4
 #define EXIT_STR "exit"
+#define CLOSE_SOCKET_MSG "close"
 static const int MAX_BUFFER_SIZE = 256;
 
 static const std::regex portRegex("^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$");
@@ -43,16 +44,21 @@ int clientFd, valread;
 fd_set readFds;
 //struct sockaddr_in serv_addr;
 
+//void checkSysCall(const int& sysCallVal, const string &sysCall){
+//    if (sysCallVal < 0){
+//        print_error(sysCall, errno);
+//        exit(1);
+//    }
 
-bool not_command(const std::string& s)
-{
-    string const commands[] = {"send", "exit", "who", "create_group"};
-    for(const string& c : commands)
-    {
-        if(c == s) return false;
-    }
-    return true;
-}
+//bool not_command(const std::string& s)
+//{
+//    string const commands[] = {"send", "exit", "who", "create_group"};
+//    for(const string& c : commands)
+//    {
+//        if(c == s) return false;
+//    }
+//    return true;
+//}
 
 bool all_alphanumeric(const std::string& s)
 {
@@ -78,7 +84,7 @@ void validateArguments(int argc, char* argv[])
 {
     // Input validation
     if (argc != VALID_ARGC || !all_alphanumeric(argv[1]) ||
-            !not_command(argv[1]) ||
+//            !not_command(argv[1]) ||
         !regex_match(argv[2], ipRegex) ||  !regex_match(argv[3], portRegex))
     {
         print_client_usage();
@@ -274,7 +280,6 @@ int main(int argc, char* argv[])
         // got command from client
         if (FD_ISSET(STDIN_FILENO, &clientListenFds))
         {
-            cout << "in stdin handle" << endl;
             auto inRead = (int)read(STDERR_FILENO, readBuffer,
                                                      MAX_BUFFER_SIZE -1);
             // parse_command errors out with empty string
@@ -303,9 +308,7 @@ int main(int argc, char* argv[])
         // got message from server
         else if (FD_ISSET(clientFd, &clientListenFds))
         {
-            cout << "in server socket handle" << endl;
 
-            // TODO -------------------------- :
             // Read response from server
             char buf[MAX_BUFFER_SIZE] = {0};
             auto bytesRead = (int)read(clientFd, &buf, MAX_BUFFER_SIZE - 1);
@@ -316,8 +319,11 @@ int main(int argc, char* argv[])
             }
             buf[bytesRead] = '\0';
             string serverResponse(buf);
-
-
+            if(serverResponse == CLOSE_SOCKET_MSG)
+            {
+                print_exit(false, clientName);
+                exit(0);
+            }
 
             tcflush(clientFd, TCIOFLUSH);
             cout << serverResponse << endl;
