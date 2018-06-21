@@ -286,6 +286,12 @@ void handleExitRequest(const int clientFd)
             {
                 deleteIter = member;
                 group.second.erase(deleteIter);
+                // remove empty group
+                if(group.second.empty())
+                {
+                    cout << "in erase group handler" << endl;
+                    groupsMap.erase(groupsMap.find(group.first));
+                }
                 break;
             }
         }
@@ -420,6 +426,20 @@ void handlePeerToPeerMessage(const string &clientName, const string &peerName,
 }
 
 
+bool isInGroup(const string& clientName, const string& groupName)
+{
+
+    for (auto group : groupsMap)
+    {
+        if(group.first == groupName && (find(group.second.begin(),
+           group.second.end(), clientName) != group.second.end()))
+        {
+            return true;
+        }
+    }
+    return false;
+}
+
 
 void handleSendRequest(const string &clientName, const string &name,
                        const string &message)
@@ -428,11 +448,11 @@ void handleSendRequest(const string &clientName, const string &name,
     string serverMessage = clientName + ": " + message;
 
     // Handle send to group request
-    if (!( groupsMap.find(name) == groupsMap.end()))
+    if (!( groupsMap.find(name) == groupsMap.end())
+        && isInGroup(clientName, name))
     {
         handleGroupMessage(clientName, name, serverMessage);
         sendSuccessMessages(clientName, name, message);
-
     }
 //    && not_command(name)
 //       && not_command(clientName)
