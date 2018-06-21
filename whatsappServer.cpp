@@ -357,7 +357,7 @@ void handleCreateGroupRequest(const string &clientName, const string &groupName,
 
         // send error to client
         string errorMessage = string(CREATE_GROUP_ERROR_MSG) +
-                              "\"" + groupName + "\".\n";
+                              "\"" + groupName + "\".";
 
         auto sysCall = (int)write(clientToFdMap[clientName],
                                   errorMessage.c_str(),
