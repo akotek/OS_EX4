@@ -488,10 +488,10 @@ void handleWhoRequest(const int clientFd)
 
     for (auto &client : fdToClientMap)
     {
-        if(client.first != clientFd)
-        {
+//        if(client.first != clientFd)
+//        {
             clientsSet.insert(client.second);
-        }
+//        }
     }
 
     if(clientsSet.empty())
@@ -501,7 +501,7 @@ void handleWhoRequest(const int clientFd)
     // set to string
     std::for_each(clientsSet.begin(), clientsSet.end(), addToString);
     // remove last ","
-    whoMessage = whoMessage.substr(0, whoMessage.size() - 1) + ".\n";
+    whoMessage = whoMessage.substr(0, whoMessage.size() - 1) + ".";
 
     // Send response and server message
     print_who_server(fdToClientMap[clientFd]);
