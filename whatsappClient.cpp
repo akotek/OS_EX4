@@ -43,9 +43,8 @@ int server_port;
 
 struct sockaddr_in server_sockaddr;
 struct hostent *hp;
-int clientFd, valread;
+int clientFd;
 fd_set readFds;
-//struct sockaddr_in serv_addr;
 
 void checkSysCall(const int& sysCallVal, const string &sysCall)
 {
@@ -57,16 +56,6 @@ void checkSysCall(const int& sysCallVal, const string &sysCall)
 }
 
 
-//bool not_command(const std::string& s)
-//{
-//    string const commands[] = {"send", "exit", "who", "create_group"};
-//    for(const string& c : commands)
-//    {
-//        if(c == s) return false;
-//    }
-//    return true;
-//}
-
 bool all_alphanumeric(const std::string& s)
 {
     return all_of(s.begin(),s.end(),
@@ -74,12 +63,6 @@ bool all_alphanumeric(const std::string& s)
 }
 
 // --------- Client API: ---------
-
-//void handleGroupValidation()
-//{
-//
-//}
-//
 
 
 void validateArguments(int argc, char* argv[]);
@@ -105,38 +88,34 @@ void validateArguments(int argc, char* argv[])
 }
 
 
-// TODO: change and cleanup
 void establishConnection()
 {
-
     if ((hp = gethostbyname(server_ip)) == NULL)
     {
-//        cerr << FAILED_CONNECT << endl << flush; //TODO: error msg
+        print_fail_connection();
         exit(1);
     }
-
     memset(&server_sockaddr, 0, sizeof(server_sockaddr));
     memcpy((char *)&server_sockaddr.sin_addr, hp->h_addr, hp->h_length);
     server_sockaddr.sin_family = hp->h_addrtype;
     server_sockaddr.sin_port = htons((u_short)server_port);
-    // build the socket
-    if ((clientFd = socket(hp->h_addrtype, SOCK_STREAM, 0)) < 0)
-    {
-//        printf("\n Socket creation error \n"); // TODO: ERRROR msg
-        exit(1);
-    }
+    // Build the socket
+    clientFd = (int)socket(hp->h_addrtype, SOCK_STREAM, 0);
+    checkSysCall(clientFd, "socket");
     // Connect to server
-    if (connect(clientFd, (struct sockaddr *)&server_sockaddr,
-                sizeof(server_sockaddr)) < 0)
+    auto connectionCheck = (int)connect(clientFd, (struct sockaddr *)
+                             &server_sockaddr, sizeof(server_sockaddr));
+    if (connectionCheck < 0)
     {
         close(clientFd);
         print_fail_connection();
         exit(1);
     }
     // Register clientName to server
-    if (write(clientFd, clientName, strlen(clientName)) < 0)
+    auto registerCheck = (int)write(clientFd, clientName, strlen(clientName));
+    if (registerCheck < 0)
     {
-        print_fail_connection(); // TODO: check what should be the error message
+        print_fail_connection();
         exit(1);
     }
 
@@ -159,7 +138,6 @@ void establishConnection()
 bool validateInput(const string &command)
 {
 
-
     // inputs to insert to the parse function
     command_type commandT;
     string name;
@@ -174,7 +152,6 @@ bool validateInput(const string &command)
 
     // splits user input to workable pieces
     parse_command(command, commandT, name, message, clients);
-
 
     // validate user input by command type:
     switch (commandT)
@@ -212,16 +189,6 @@ bool validateInput(const string &command)
                 return false;
             }
 
-//            // check if current client in the group he wants to create
-//            if (!(std::find(clients.begin(), clients.end(), clientName)
-//                  != clients.end()))
-//            {
-//                print_create_group(false, false, clientName, name);
-//                return false;
-//            }
-//            vector<string> noDuplicatesClients;
-//            noDuplicatesClients.push_back(string(clientName));
-
             // checks the client names are valid
             for(string& client : clients)
             {
@@ -230,35 +197,29 @@ bool validateInput(const string &command)
                     print_create_group(false, false, clientName, name);
                     return false;
                 }
-//                if (!(std::find(noDuplicatesClients.begin(), noDuplicatesClients.end(),
-//                                client) != noDuplicatesClients.end()))
-//                {
-//                    noDuplicatesClients.push_back(client);
-//                }
             }
-
-//            if(noDuplicatesClients.size() < 2)
-//            {
-//                print_create_group(false, false, clientName, name);
-//                return false;
-//            }
             break;
         }
 
         case WHO:
         {
+            if(command != "who")
+            {
+                print_invalid_input();
+                return false;
+            }
             break;
         }
 
         case EXIT:
         {
-            // TODO : check valid input?
-
+            if(command != "exit")
+            {
+                print_invalid_input();
+                return false;
+            }
             break;
         }
-//
-//            default:
-//                break;
     }
     return true;
 }
@@ -278,11 +239,9 @@ int main(int argc, char* argv[])
     // create a connection to the server
     establishConnection();
     FD_ZERO(&readFds);
-//    FD_ZERO(&clientListenFds);
     FD_SET(STDIN_FILENO, &readFds);
     FD_SET(clientFd, &readFds);
 
-//    print_connection();
 
     while(true)
     {
@@ -292,7 +251,6 @@ int main(int argc, char* argv[])
         auto listen = (int)select(SOCKETS_NUM , &clientListenFds, NULL, NULL, NULL);
 
         checkSysCall(listen, "select");
-
 
         // got command from client
         if (FD_ISSET(STDIN_FILENO, &clientListenFds))
@@ -347,10 +305,6 @@ int main(int argc, char* argv[])
             tcflush(clientFd, TCIOFLUSH);
             cout << serverResponse << endl;
         }
-
-
-
-
 
     }
     return 0;
