@@ -19,8 +19,8 @@
 using namespace std;
 
 // TODO:
-// TODO: send to group doesn't work properly
-// TODO: duplicate handle dosen't work properly
+// TODO: send to group doesn't work properly - client side
+// TODO: duplicate handle dosen't work properly -server side
 //
 
 // --------- Constants ---------
