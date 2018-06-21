@@ -166,6 +166,11 @@ bool validateInput(const string &command)
     // splits user input to workable pieces
     parse_command(command, commandT, name, message, clients);
 
+    if(clients.empty())
+    {
+        cout<< "wwwww" << endl;
+    }
+
     // validate user input by command type:
     switch (commandT)
     {
@@ -214,11 +219,11 @@ bool validateInput(const string &command)
                     print_create_group(false, false, clientName, name);
                     return false;
                 }
-                if (!(std::find(noDuplicatesClients.begin(), noDuplicatesClients.end(),
-                                client) != noDuplicatesClients.end()))
-                {
-                    noDuplicatesClients.push_back(client);
-                }
+//                if (!(std::find(noDuplicatesClients.begin(), noDuplicatesClients.end(),
+//                                client) != noDuplicatesClients.end()))
+//                {
+//                    noDuplicatesClients.push_back(client);
+//                }
             }
 
 //            if(noDuplicatesClients.size() < 2)
