@@ -271,15 +271,15 @@ void handleClientRequest(fd_set &readfds){
 
 void handleExitRequest(const int clientFd)
 {
-    auto writeCall = (int) write(clientFd, UNREGISTERED_SUCCESSFULLY_MSG,
-                                 strlen(UNREGISTERED_SUCCESSFULLY_MSG));
-    checkSysCall(writeCall, "write");
-    close(clientFd);
-    FD_CLR(clientFd, &clientfds);
     string clientName = fdToClientMap[clientFd];
 
     clientToFdMap.erase(clientName);
     fdToClientMap.erase(clientFd);
+
+    if(!( clientToFdMap.find(clientName) == clientToFdMap.end()))
+    {
+        cout << "UNSIGN FAIL" << endl;
+    }
 
     // Remove client from groups.
     for(auto group : groupsMap)
@@ -295,6 +295,14 @@ void handleExitRequest(const int clientFd)
             }
         }
     }
+
+
+    auto writeCall = (int) write(clientFd, UNREGISTERED_SUCCESSFULLY_MSG,
+                                 strlen(UNREGISTERED_SUCCESSFULLY_MSG));
+    checkSysCall(writeCall, "write");
+    close(clientFd);
+    FD_CLR(clientFd, &clientfds);
+
     print_exit(true, clientName);
 }
 
@@ -347,7 +355,7 @@ void handleCreateGroupRequest(const string &clientName, const string &groupName,
     const bool isInActive = validateGroupMembers(clientsVec,
                                                  groupName, clientName);
     if (clientsVec.size() < MIN_GROUP_NUM || !isClientInGroup || !isInActive
-        || !not_command(clientName)){
+        ){ // || !not_command(clientName)
         print_create_group(true, false, clientName, groupName);
 
         // send error to client
@@ -379,7 +387,6 @@ void handleCreateGroupRequest(const string &clientName, const string &groupName,
                               serverMessage.c_str(),
                               strlen(serverMessage.c_str()));
     checkSysCall(sysCall, "write");
-    return;
 }
 
 
@@ -444,17 +451,17 @@ void handleSendRequest(const string &clientName, const string &name,
     string serverMessage = clientName + ": " + message;
 
     // Handle send to group request
-    if (!( groupsMap.find(name) == groupsMap.end()) && !not_command(name)
-        && !not_command(clientName))
+    if (!( groupsMap.find(name) == groupsMap.end()))
     {
         handleGroupMessage(clientName, name, serverMessage);
         sendSuccessMessages(clientName, name, message);
 
     }
+//    && not_command(name)
+//       && not_command(clientName)
+
         // Handle send to another client request
-    else if (!( clientToFdMap.find(name) == clientToFdMap.end())
-             && !not_command(name)
-             && !not_command(clientName))
+    else if (!( clientToFdMap.find(name) == clientToFdMap.end()))
     {
         handlePeerToPeerMessage(clientName, name, serverMessage);
         sendSuccessMessages(clientName, name, message);

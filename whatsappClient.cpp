@@ -44,13 +44,18 @@ fd_set readFds;
 //struct sockaddr_in serv_addr;
 
 
-bool all_alphanumeric(const std::string& s)
+bool not_command(const std::string& s)
 {
     string const commands[] = {"send", "exit", "who", "create_group"};
     for(const string& c : commands)
     {
         if(c == s) return false;
     }
+    return true;
+}
+
+bool all_alphanumeric(const std::string& s)
+{
     return all_of(s.begin(),s.end(),
                        [](char c) { return isalnum(c); });
 }
@@ -73,6 +78,7 @@ void validateArguments(int argc, char* argv[])
 {
     // Input validation
     if (argc != VALID_ARGC || !all_alphanumeric(argv[1]) ||
+            !not_command(argv[1]) ||
         !regex_match(argv[2], ipRegex) ||  !regex_match(argv[3], portRegex))
     {
         print_client_usage();
