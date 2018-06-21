@@ -286,6 +286,7 @@ void handleExitRequest(const int clientFd)
             {
                 deleteIter = member;
                 group.second.erase(deleteIter);
+                break;
             }
         }
     }
