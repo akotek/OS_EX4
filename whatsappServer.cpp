@@ -369,8 +369,8 @@ void handleCreateGroupRequest(const string &clientName, const string &groupName,
 
 
     // msg client
-    string serverMessage = clientName + ": Group \"" + groupName
-                           + "\" was created successfully.\n";
+    string serverMessage = "Group \"" + groupName
+                           + "\" was created successfully.";
     auto sysCall = (int)write(clientToFdMap[clientName],
                               serverMessage.c_str(),
                               strlen(serverMessage.c_str()));

@@ -141,6 +141,7 @@ void establishConnection()
     // Read response from server
     char buf[MAX_BUFFER_SIZE] = {0};
     auto bytesRead = (int) read(clientFd, &buf, MAX_BUFFER_SIZE - 1);
+    checkSysCall(bytesRead, "read");
     buf[bytesRead] = '\0';
     string serverResponse(buf);
 
@@ -282,17 +283,16 @@ int main(int argc, char* argv[])
         clientListenFds = readFds;
         auto listen = (int)select(SOCKETS_NUM , &clientListenFds, NULL, NULL, NULL);
 
-        if(listen < 0)
-        {
-            //error
-            exit(1);
-        }
+        checkSysCall(listen, "select");
+
 
         // got command from client
         if (FD_ISSET(STDIN_FILENO, &clientListenFds))
         {
             auto inRead = (int)read(STDERR_FILENO, readBuffer,
                                                      MAX_BUFFER_SIZE -1);
+
+            checkSysCall(inRead, "read");
             // parse_command errors out with empty string
             if(inRead < 0 || string(readBuffer) == EMPTY_STRING ||
                     string(readBuffer).size() < MIN_STR)
@@ -307,7 +307,9 @@ int main(int argc, char* argv[])
             {
                 continue;
             }
-            write(clientFd, command.c_str(), strlen(command.c_str()) + 1);
+            auto writeToServer = (int)write(clientFd, command.c_str(),
+                                            strlen(command.c_str()) + 1);
+            checkSysCall(writeToServer, "write");
 
             if(command == EXIT_STR)
             {
@@ -323,11 +325,8 @@ int main(int argc, char* argv[])
             // Read response from server
             char buf[MAX_BUFFER_SIZE] = {0};
             auto bytesRead = (int)read(clientFd, &buf, MAX_BUFFER_SIZE - 1);
-            if(bytesRead < 0)
-            {
-                //TODO error handling
-                exit(1);
-            }
+            checkSysCall(bytesRead, "read");
+
             buf[bytesRead] = '\0';
             string serverResponse(buf);
             if(serverResponse == CLOSE_SOCKET_MSG)
