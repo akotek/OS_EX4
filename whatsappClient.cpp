@@ -44,11 +44,15 @@ int clientFd, valread;
 fd_set readFds;
 //struct sockaddr_in serv_addr;
 
-void checkSysCall(const int& sysCallVal, const string &sysCall){
-    if (sysCallVal < 0){
+void checkSysCall(const int& sysCallVal, const string &sysCall)
+{
+    if (sysCallVal < 0)
+    {
         print_error(sysCall, errno);
         exit(1);
     }
+}
+
 
 //bool not_command(const std::string& s)
 //{
@@ -162,7 +166,7 @@ bool validateInput(const string &command)
     // splits user input to workable pieces
     parse_command(command, commandT, name, message, clients);
 
-    // handle user input by command type:
+    // validate user input by command type:
     switch (commandT)
     {
         case INVALID:
@@ -170,7 +174,6 @@ bool validateInput(const string &command)
             print_invalid_input();
             return false;
         }
-
 
         case SEND:
         {
