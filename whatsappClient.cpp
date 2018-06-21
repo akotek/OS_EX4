@@ -18,8 +18,6 @@
 
 using namespace std;
 
-// TODO:
-// TODO: duplicate handle dosen't work properly - client side
 
 // --------- Constants ---------
 #define VALID_ARGC 4
@@ -32,7 +30,7 @@ static const int MAX_BUFFER_SIZE = 256;
 static const std::regex portRegex("^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$");
 static const std::regex ipRegex("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\."
                                         "[0-9]{1,3}$");
-string CLOSE_SOCKET_MSG = "close";
+string CLIENT_NAME_EXISTS = "duplicate";
 
 
 // --------- Globals ---------
@@ -119,12 +117,18 @@ void establishConnection()
         exit(1);
     }
 
-    // TODO -------------------------- :
     // Read response from server
     char buf[MAX_BUFFER_SIZE] = {0};
     auto bytesRead = (int) read(clientFd, &buf, MAX_BUFFER_SIZE - 1);
     buf[bytesRead] = '\0';
     string serverResponse(buf);
+
+    if(serverResponse == CLIENT_NAME_EXISTS)
+    {
+        print_dup_connection();
+        exit(1);
+    }
+
     cout << serverResponse << endl;
 }
 
@@ -260,7 +264,7 @@ int main(int argc, char* argv[])
         // got command from client
         if (FD_ISSET(STDIN_FILENO, &clientListenFds))
         {
-//            cout << "in stdin handle" << endl;
+            cout << "in stdin handle" << endl;
             auto inRead = (int)read(STDERR_FILENO, readBuffer,
                                                      MAX_BUFFER_SIZE -1);
             // parse_command errors out with empty string
@@ -277,8 +281,6 @@ int main(int argc, char* argv[])
             {
                 continue;
             }
-            cout << command << endl;
-
             write(clientFd, command.c_str(), strlen(command.c_str()) + 1);
 
             if(command == EXIT_STR)
@@ -291,7 +293,7 @@ int main(int argc, char* argv[])
         // got message from server
         else if (FD_ISSET(clientFd, &clientListenFds))
         {
-//            cout << "in server socket handle" << endl;
+            cout << "in server socket handle" << endl;
 
             // TODO -------------------------- :
             // Read response from server
@@ -304,11 +306,13 @@ int main(int argc, char* argv[])
             }
             buf[bytesRead] = '\0';
             string serverResponse(buf);
-            if(serverResponse == CLOSE_SOCKET_MSG) // TODO - reachable??
-            {
-                print_exit(false, clientName); // TODO: what msg?
-                exit(1);
-            }
+            cout << "server response size: " << serverResponse.size() << endl;
+//            if(serverResponse == CLOSE_SOCKET_MSG) // TODO - reachable??
+//            {
+//                print_exit(false, clientName); // TODO: what msg?
+//                exit(1);
+//            }
+
 
             tcflush(clientFd, TCIOFLUSH);
             cout << serverResponse << endl;

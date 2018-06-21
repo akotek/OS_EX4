@@ -428,7 +428,7 @@ void handleSendRequest(const string &clientName, const string &name,
                        const string &message)
 {
     string serverMessage = clientName + ": " + message;
-    
+
     // Handle send to group request
     if (!( groupsMap.find(name) == groupsMap.end()))
     {
