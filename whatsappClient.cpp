@@ -32,6 +32,7 @@ static const std::regex portRegex("^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[
 static const std::regex ipRegex("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\."
                                         "[0-9]{1,3}$");
 static const std::regex commaRegex(".*(,,|, ,).*");
+static const std::regex spaceRegex("(\\s)*");
 string const CLIENT_NAME_EXISTS = "duplicate";
 
 // --------- Globals ---------
@@ -179,7 +180,7 @@ bool validateInput(const string &command)
 
         case SEND:
         {
-            if (name == clientName)
+            if (name == clientName || regex_match(message, spaceRegex))
             {
                 print_send(false, false, clientName, name, command);
                 return false;
