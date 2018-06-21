@@ -91,7 +91,7 @@ void validateArguments(int argc, char* argv[])
 {
     // Input validation
     if (argc != VALID_ARGC || !all_alphanumeric(argv[1]) ||
-//            !not_command(argv[1]) ||
+            string(argv[1]).size() > MAX_BUFFER_SIZE ||
         !regex_match(argv[2], ipRegex) ||  !regex_match(argv[3], portRegex))
     {
         print_client_usage();
