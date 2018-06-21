@@ -351,7 +351,7 @@ void handleCreateGroupRequest(const string &clientName, const string &groupName,
     }
 
     // create group:
-    groupsMap[clientName] = clientsVec;
+    groupsMap[groupName] = clientsVec;
     print_create_group(true, true, clientName, groupName);
 
     //    <sender_client_name>
@@ -428,7 +428,7 @@ void handleSendRequest(const string &clientName, const string &name,
                        const string &message)
 {
     string serverMessage = clientName + ": " + message;
-
+    
     // Handle send to group request
     if (!( groupsMap.find(name) == groupsMap.end()))
     {
@@ -460,8 +460,6 @@ void handleSendRequest(const string &clientName, const string &name,
 
 void handleWhoRequest(const int clientFd)
 {
-    cout << "in handle who request" << endl;
-
     string whoMessage;
     static const auto addToString =
             [&whoMessage](const string& client)
