@@ -268,6 +268,7 @@ void handleClientRequest(fd_set &readfds){
     }
 }
 
+
 void handleExitRequest(const int clientFd)
 {
     string clientName = fdToClientMap[clientFd];
@@ -286,17 +287,13 @@ void handleExitRequest(const int clientFd)
             {
                 deleteIter = member;
                 group.second.erase(deleteIter);
-                // remove empty group
-                if(group.second.empty())
-                {
-                    cout << "in erase group handler" << endl;
-                    groupsMap.erase(groupsMap.find(group.first));
-                }
                 break;
             }
         }
+        if (group.second.empty()){
+            groupsMap.erase(group.first);
+        }
     }
-
 
     auto writeCall = (int) write(clientFd, UNREGISTERED_SUCCESSFULLY_MSG,
                                  strlen(UNREGISTERED_SUCCESSFULLY_MSG));
