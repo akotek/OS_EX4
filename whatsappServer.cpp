@@ -276,7 +276,7 @@ void handleExitRequest(const int clientFd)
     fdToClientMap.erase(clientFd);
 
     // Remove client from groups.
-    for(auto group : groupsMap)
+    for(auto& group : groupsMap)
     {
         vector<string>::iterator deleteIter;
         for(auto member = group.second.begin();
@@ -429,7 +429,7 @@ void handlePeerToPeerMessage(const string &clientName, const string &peerName,
 bool isInGroup(const string& clientName, const string& groupName)
 {
 
-    for (auto group : groupsMap)
+    for (auto& group : groupsMap)
     {
         if(group.first == groupName && (find(group.second.begin(),
            group.second.end(), clientName) != group.second.end()))
