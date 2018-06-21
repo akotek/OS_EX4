@@ -18,6 +18,11 @@
 
 using namespace std;
 
+// TODO:
+// TODO: send to group doesn't work properly
+// TODO: duplicate handle dosen't work properly
+//
+
 // --------- Constants ---------
 #define VALID_ARGC 4
 #define EMPTY_STRING ""
