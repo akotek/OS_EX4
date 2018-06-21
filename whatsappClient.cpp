@@ -31,6 +31,7 @@ static const int MAX_BUFFER_SIZE = 256;
 static const std::regex portRegex("^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$");
 static const std::regex ipRegex("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\."
                                         "[0-9]{1,3}$");
+static const std::regex commaRegex(".*(,,|, ,).*");
 string const CLIENT_NAME_EXISTS = "duplicate";
 
 // --------- Globals ---------
@@ -166,8 +167,8 @@ bool validateInput(const string &command)
     // splits user input to workable pieces
     parse_command(command, commandT, name, message, clients);
 
-    // only ,,,, input
-    if(clients.empty())
+    // example: a,, ,, input
+    if(clients.empty() || regex_match(command, commaRegex))
     {
         print_create_group(false, false, clientName, name);
         return false;
