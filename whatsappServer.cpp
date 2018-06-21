@@ -469,7 +469,7 @@ void handleSendRequest(const string &clientName, const string &name,
         print_send(true, false, clientName, name, message);
         // send error to client
         string errorMessage = string(SEND_ERROR_MSG) +
-                              "\"" + message + "\" to " + name + ".\n";
+                              "\"" + message + "\" to " + name + ".";
 
         auto sysCall = (int)write(clientToFdMap[clientName],
                                   errorMessage.c_str(),
