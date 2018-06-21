@@ -486,8 +486,6 @@ void handleWhoRequest(const int clientFd)
     // remove last ","
     whoMessage = whoMessage.substr(0, whoMessage.size() - 1) + ".\n";
 
-    cout << whoMessage << endl;
-
     // Send response and server message
     print_who_server(fdToClientMap[clientFd]);
     auto sysCall = (int)write(clientFd,
