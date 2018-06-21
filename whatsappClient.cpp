@@ -290,7 +290,7 @@ int main(int argc, char* argv[])
         // got command from client
         if (FD_ISSET(STDIN_FILENO, &clientListenFds))
         {
-            auto inRead = (int)read(STDERR_FILENO, readBuffer,
+            auto inRead = (int)read(STDIN_FILENO, readBuffer,
                                                      MAX_BUFFER_SIZE -1);
 
             checkSysCall(inRead, "read");
@@ -302,12 +302,15 @@ int main(int argc, char* argv[])
                 continue;
             }
             command = string(readBuffer);
+            cout << command << endl;
             command = command.substr(0, command.size()-1); // removes newline
+            cout << command << endl;
 
             if(!validateInput(command))
             {
                 continue;
             }
+
             auto writeToServer = (int)write(clientFd, command.c_str(),
                                             strlen(command.c_str()) + 1);
             checkSysCall(writeToServer, "write");
