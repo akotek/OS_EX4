@@ -66,8 +66,6 @@ bool handleNewConnection(const int &sockfd);
 void handleClientRequest(fd_set &readfds);
 // Handles stdInput
 bool handleStdInput();
-// Removes client
-//void removeClient(const int &fd);
 // Sets new connection
 int setNewConnection();
 // Handles a create_group request
@@ -78,23 +76,11 @@ void checkSysCall(const int& sysCallVal, const string &sysCall);
 // Handles a send request
 void handleSendRequest(const string & clientName, const string &name,
                        const string &message);
-
 void handleWhoRequest(const int clientFd);
 void handleExitRequest(const int clientFd);
 void handlePeerToPeerMessage(const string &clientName, const string &peerName,
                              const string &serverMessage);
 // ------------------------------------
-
-bool not_command(const std::string& s)
-{
-    string const commands[] = {"send", "exit", "who", "create_group"};
-    for(const string& c : commands)
-    {
-        if(c == s) return false;
-    }
-    return true;
-}
-
 
 int main(int argc, char* argv[])
 {
@@ -115,7 +101,7 @@ int main(int argc, char* argv[])
     FD_ZERO(&readfds);
     FD_SET(STDIN_FILENO, &clientfds);
     FD_SET(serverSockfd, &clientfds);
-    // Keep track of biggest file descriptor //TODO change this to numOfFds++?
+    // Keep track of biggest file descriptor
     fdMax = serverSockfd;
     while (true){
 
@@ -149,7 +135,6 @@ int main(int argc, char* argv[])
         }
             // We now check if there is any data from active sockets:
         else {
-//            cout << "handle request" << endl;
             handleClientRequest(readfds);
         }
     } // END WHILE
@@ -166,7 +151,6 @@ int setNewConnection()
 
 
 bool handleNewConnection(const int& sockfd){
-//    cout << "in HandleNewConnection " << endl;
 
     char buf[MAX_BUFFER_SIZE] = {0};
     auto bytesRead = (int) read(sockfd, &buf, MAX_BUFFER_SIZE - 1);
@@ -182,14 +166,12 @@ bool handleNewConnection(const int& sockfd){
     }
     if (clientToFdMap.count(clientName) || groupsMap.count(clientName)){
         // Client exists
-        print_dup_connection(); // TODO remove - for debugging
         auto writeCall = (int) write(sockfd, CLIENT_NAME_EXISTS, strlen
                 (CLIENT_NAME_EXISTS));
         checkSysCall(writeCall, "write");
         return false;
     }
 
-//    cout << "Adding new client..." << endl;
     FD_SET(sockfd, &clientfds);
     fdToClientMap[sockfd] = clientName;
     clientToFdMap[clientName] = sockfd;
@@ -210,13 +192,12 @@ bool handleStdInput(){
     buf[bytesRead] = '\0';
     if (string(buf) == EXIT_CMD)
     {
-//        cout << "in exit command" << endl;
         shutdown();
         print_exit();
         close(serverSockfd);
         return false;
     }
-    //TODO another thing was pressed in server shell- what to do in this case:
+    // If something else was pressed: don't do anything
     return true;
 }
 
@@ -229,10 +210,12 @@ void handleClientRequest(fd_set &readfds){
         if (FD_ISSET(fd, &readfds)){
             auto bytesRead = (int)read(fd, &buffer, MAX_BUFFER_SIZE -1);
             checkSysCall(bytesRead, "read");
-            tcflush(fd, TCIOFLUSH); // TODO: need to flush?
+            tcflush(fd, TCIOFLUSH);
 
             if (bytesRead == 0){
-                // TODO User disconnected -- -- - - complete?
+                // User disconnected:
+                // In drill it says it will only disconnect with 'exit'
+                return;
             }
             buffer[bytesRead] = '\0';
             // Parse given command:
@@ -243,9 +226,7 @@ void handleClientRequest(fd_set &readfds){
             vector<string> clients;
             parse_command(request, commandT, name, message, clients);
 
-            //TODO: AVIV check me - changed it also in create_group
             string clientName = fdToClientMap[fd];
-            // TODO: Validate clientName
             if (commandT == CREATE_GROUP){
                 handleCreateGroupRequest(clientName, name, clients);
                 break;
@@ -255,7 +236,7 @@ void handleClientRequest(fd_set &readfds){
                 break;
             }
             else if (commandT == WHO)
-            { // TODO parser only works with space
+            {
                 handleWhoRequest(fd);
                 break;
             }
@@ -305,8 +286,6 @@ void handleExitRequest(const int clientFd)
 }
 
 
-// TODO: check with aviv if stdout is the right output - or print to socket
-// stream?
 bool validateGroupMembers(vector<string> groupMembers, string groupName,
                           string clientName){
 
@@ -314,26 +293,21 @@ bool validateGroupMembers(vector<string> groupMembers, string groupName,
     if (!( groupsMap.find(groupName) == groupsMap.end()) ||
             !( clientToFdMap.find(groupName) == clientToFdMap.end()))
     {
-//        print_create_group(true, false, clientName, groupName);
         return false;
     }
 
     // check if current client in the group he wants to create
-    // TODO: code duplication with send request
     if (!(find(groupMembers.begin(), groupMembers.end(), clientName)
           != groupMembers.end()))
     {
-//        print_create_group(true, false, clientName, groupName);
         return false;
     }
     // check that all group members are connected to the server
     for(auto member = groupMembers.begin(); member != groupMembers.end();
         member++)
     {
-        // TODO: check with aviv what is the minimal fd id
         if(clientToFdMap[(*member)] < 2 || clientToFdMap[(*member)] > fdMax)
         {
-//            print_create_group(true, false, clientName, groupName);
             return false;
         }
     }
@@ -352,7 +326,7 @@ void handleCreateGroupRequest(const string &clientName, const string &groupName,
     const bool isInActive = validateGroupMembers(clientsVec,
                                                  groupName, clientName);
     if (clientsSet.size() < MIN_GROUP_NUM || !isInActive
-        ){ // || !not_command(clientName)
+        ){
         print_create_group(true, false, clientName, groupName);
 
         // send error to client
@@ -451,9 +425,6 @@ void handleSendRequest(const string &clientName, const string &name,
         handleGroupMessage(clientName, name, serverMessage);
         sendSuccessMessages(clientName, name, message);
     }
-//    && not_command(name)
-//       && not_command(clientName)
-
         // Handle send to another client request
     else if (!( clientToFdMap.find(name) == clientToFdMap.end()))
     {
@@ -488,10 +459,7 @@ void handleWhoRequest(const int clientFd)
 
     for (auto &client : fdToClientMap)
     {
-//        if(client.first != clientFd)
-//        {
             clientsSet.insert(client.second);
-//        }
     }
 
     if(clientsSet.empty())
@@ -513,14 +481,12 @@ void handleWhoRequest(const int clientFd)
 
 
 void shutdown(){
-//    cout << "Shutting down: closing " << fdMax << " sockets" << endl;
 
     for(const auto client : fdToClientMap)
     {
         auto sendCheck = (int)write(client.first, CLOSE_SOCKET_MSG, strlen
                 (CLOSE_SOCKET_MSG));
     }
-//    close(serverSockfd);
 }
 
 int createSocket(){
@@ -553,13 +519,8 @@ void establishServer(const int &port){
     // And init's server:
     serverSockfd = createSocket();
     initServer(port, addr, server);
-//    printf("Socket created and server init succeeded \n");
-
     bindSocket(serverSockfd, server);
-//    printf("Binding succeded, listening on port %d \n", port);
-
     listenSocket(serverSockfd);
-//    printf("Waiting for incoming connections...\n");
 }
 
 void checkSysCall(const int& sysCallVal, const string &sysCall){
