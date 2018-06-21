@@ -33,6 +33,7 @@ static const std::regex ipRegex("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\."
                                         "[0-9]{1,3}$");
 static const std::regex commaRegex(".*(,,|, ,).*");
 static const std::regex spaceRegex("(\\s)*");
+static const std::regex invalidSendRegex("^send\\s[a-zA-Z0-9]*$");
 string const CLIENT_NAME_EXISTS = "duplicate";
 
 // --------- Globals ---------
@@ -164,6 +165,12 @@ bool validateInput(const string &command)
     string name;
     string message;
     vector<string> clients;
+
+    if(regex_match(command, invalidSendRegex))
+    {
+        print_invalid_input();
+        return false;
+    }
 
     // splits user input to workable pieces
     parse_command(command, commandT, name, message, clients);
@@ -302,9 +309,7 @@ int main(int argc, char* argv[])
                 continue;
             }
             command = string(readBuffer);
-            cout << command << endl;
             command = command.substr(0, command.size()-1); // removes newline
-            cout << command << endl;
 
             if(!validateInput(command))
             {
