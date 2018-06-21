@@ -85,6 +85,17 @@ void handlePeerToPeerMessage(const string &clientName, const string &peerName,
                              const string &serverMessage);
 // ------------------------------------
 
+bool not_command(const std::string& s)
+{
+    string const commands[] = {"send", "exit", "who", "create_group"};
+    for(const string& c : commands)
+    {
+        if(c == s) return false;
+    }
+    return true;
+}
+
+
 int main(int argc, char* argv[])
 {
     cout << "Starting server on port: " << argv[1] << endl;
@@ -335,7 +346,8 @@ void handleCreateGroupRequest(const string &clientName, const string &groupName,
     // Check that we have those clients in active_list:
     const bool isInActive = validateGroupMembers(clientsVec,
                                                  groupName, clientName);
-    if (clientsVec.size() < MIN_GROUP_NUM || !isClientInGroup || !isInActive){
+    if (clientsVec.size() < MIN_GROUP_NUM || !isClientInGroup || !isInActive
+        || !not_command(clientName)){
         print_create_group(true, false, clientName, groupName);
 
         // send error to client
@@ -428,17 +440,21 @@ void handlePeerToPeerMessage(const string &clientName, const string &peerName,
 void handleSendRequest(const string &clientName, const string &name,
                        const string &message)
 {
+
     string serverMessage = clientName + ": " + message;
 
     // Handle send to group request
-    if (!( groupsMap.find(name) == groupsMap.end()))
+    if (!( groupsMap.find(name) == groupsMap.end()) && !not_command(name)
+        && !not_command(clientName))
     {
         handleGroupMessage(clientName, name, serverMessage);
         sendSuccessMessages(clientName, name, message);
 
     }
         // Handle send to another client request
-    else if (!( clientToFdMap.find(name) == clientToFdMap.end()))
+    else if (!( clientToFdMap.find(name) == clientToFdMap.end())
+             && !not_command(name)
+             && !not_command(clientName))
     {
         handlePeerToPeerMessage(clientName, name, serverMessage);
         sendSuccessMessages(clientName, name, message);
