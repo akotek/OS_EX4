@@ -30,8 +30,7 @@ static const int MAX_BUFFER_SIZE = 256;
 static const std::regex portRegex("^([0-9]{1,4}|[1-5][0-9]{4}|6[0-4][0-9]{3}|65[0-4][0-9]{2}|655[0-2][0-9]|6553[0-5])$");
 static const std::regex ipRegex("^[0-9]{1,3}\\.[0-9]{1,3}\\.[0-9]{1,3}\\."
                                         "[0-9]{1,3}$");
-string CLIENT_NAME_EXISTS = "duplicate";
-
+string const CLIENT_NAME_EXISTS = "duplicate";
 
 // --------- Globals ---------
 const char* clientName;
@@ -47,6 +46,11 @@ fd_set readFds;
 
 bool all_alphanumeric(const std::string& s)
 {
+    string const commands[] = {"send", "exit", "who", "create_group"};
+    for(const string& c : commands)
+    {
+        if(c == s) return false;
+    }
     return all_of(s.begin(),s.end(),
                        [](char c) { return isalnum(c); });
 }
@@ -170,19 +174,19 @@ bool validateInput(const string &command)
         {
             // check if group_name is alphanumeric &
             // there is more then 1 client
-            if(!all_alphanumeric(name) || clients.size() < 2)
+            if(!all_alphanumeric(name)) //  || clients.size() < 2
             {
                 print_create_group(false, false, clientName, name);
                 return false;
             }
 
-            // check if current client in the group he wants to create
-            if (!(std::find(clients.begin(), clients.end(), clientName)
-                  != clients.end()))
-            {
-                print_create_group(false, false, clientName, name);
-                return false;
-            }
+//            // check if current client in the group he wants to create
+//            if (!(std::find(clients.begin(), clients.end(), clientName)
+//                  != clients.end()))
+//            {
+//                print_create_group(false, false, clientName, name);
+//                return false;
+//            }
             vector<string> noDuplicatesClients;
             noDuplicatesClients.push_back(string(clientName));
 
@@ -201,11 +205,11 @@ bool validateInput(const string &command)
                 }
             }
 
-            if(noDuplicatesClients.size() < 2)
-            {
-                print_create_group(false, false, clientName, name);
-                return false;
-            }
+//            if(noDuplicatesClients.size() < 2)
+//            {
+//                print_create_group(false, false, clientName, name);
+//                return false;
+//            }
             break;
         }
 

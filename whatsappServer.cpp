@@ -332,28 +332,24 @@ void handleCreateGroupRequest(const string &clientName, const string &groupName,
 
     // TODO: YOAV: duplicate code with my validation (?)
     const bool isClientInGroup = clientsSet.find(clientName) != clientsSet.end();
-    if (clientsVec.size() < MIN_GROUP_NUM || !isClientInGroup){
-        print_create_group(true, false, clientName, groupName);
-    }
-
     // Check that we have those clients in active_list:
     const bool isInActive = validateGroupMembers(clientsVec,
                                                  groupName, clientName);
-
-    if(!isInActive)
-    {
+    if (clientsVec.size() < MIN_GROUP_NUM || !isClientInGroup || !isInActive){
         print_create_group(true, false, clientName, groupName);
 
         // send error to client
         string errorMessage = string(CREATE_GROUP_ERROR_MSG) +
                               "\"" + groupName + "\".\n";
 
-        auto sysCall = (int)write(clientToFdMap[clientName],
-                                  errorMessage.c_str(),
-                                  strlen(errorMessage.c_str()));
-        checkSysCall(sysCall, "write");
+//        auto sysCall = (int)write(clientToFdMap[clientName],
+//                                  errorMessage.c_str(),
+//                                  strlen(errorMessage.c_str()));
+//        checkSysCall(sysCall, "write");
         return;
     }
+
+
 
     // create group:
     groupsMap[groupName] = clientsVec;
